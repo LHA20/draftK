@@ -1,0 +1,257 @@
+═══════════════════════════════════════════════════════════════════════════
+  🔧 FIXES APPLIED - Version 3.2
+═══════════════════════════════════════════════════════════════════════════
+
+📌 THREE CRITICAL FIXES:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1️⃣ SNAPSHOT NOW DISPLAYS ACTUAL IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BEFORE:
+  Snapshot area just showed text:
+  "No snapshot yet"
+  
+AFTER:
+  When user clicks "📸 CAPTURE LICENSE PLATE":
+  ✓ YOLO detects license plate
+  ✓ Image is cropped to plate area only
+  ✓ Cropped image displays in snapshot box (380×140px)
+  ✓ Shows exactly what OCR is reading
+
+HOW IT WORKS:
+  1. YOLO detection returns coordinates (x1, y1, x2, y2)
+  2. Crop frame: current_frame[y1:y2, x1:x2]
+  3. Convert to RGB: cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+  4. Convert to QImage: QImage(rgb_crop.data, w, h, ...)
+  5. Convert to QPixmap: QPixmap.fromImage(qt_image)
+  6. Display: self.snapshot_label.setPixmap(scaled_pixmap)
+
+RESULT:
+  User can now:
+  ✓ See the captured license plate image
+  ✓ Verify it looks good before check-in
+  ✓ Check if it needs to be recaptured
+  ✓ Understand what OCR is reading
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2️⃣ CARD ID IS NOW SEPARATE FROM LICENSE PLATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BEFORE (WRONG):
+  self.card_id_input.setText(plate_text)
+  
+  Result: Card ID field auto-filled with license plate
+  Example: Card ID = "ABC123XYZ" (a license plate!)
+  
+AFTER (CORRECT):
+  self.captured_license_plate = plate_text
+  self.extracted_plate_label.setText(plate_text)
+  # Card ID field stays EMPTY
+  
+  Operator MANUALLY enters: Card ID = "CARD-2024-001234"
+  Extracted from image: License Plate = "ABC123XYZ"
+
+WHY THIS MATTERS:
+  Card ID = Parking ticket number (from operator)
+  License Plate = Vehicle identifier (from camera)
+  
+  They are DIFFERENT values with DIFFERENT purposes!
+  
+WORKFLOW:
+  ┌────────────────────────────────┐
+  │ 1. Vehicle arrives              │
+  │ 2. Capture → OCR → ABC123XYZ    │
+  │ 3. Display in purple box         │
+  │ 4. Operator enters: CARD-2024-001
+  │ 5. Operator enters: Slot A1      │
+  │ 6. Click CHECK IN                │
+  │ 7. CSV saves both values         │
+  └────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3️⃣ CSV RECORD NOW HAS CORRECT DATA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BEFORE (WRONG):
+  record = {
+      'card_id': card_id,           # "CARD-2024-001"
+      'license_plate': card_id,     # "CARD-2024-001" (WRONG!)
+  }
+
+AFTER (CORRECT):
+  record = {
+      'card_id': card_id,                      # "CARD-2024-001"
+      'license_plate': self.captured_license_plate,  # "ABC123XYZ"
+  }
+
+CSV OUTPUT:
+  
+  BEFORE:
+  Card ID,License Plate,Time In,Slot,Status
+  CARD-2024-001,CARD-2024-001,...        ✗ Duplicate data
+  CARD-2024-002,CARD-2024-002,...        ✗ Wrong license plate
+  
+  AFTER:
+  Card ID,License Plate,Time In,Slot,Status
+  CARD-2024-001,ABC123XYZ,...            ✓ Correct both values
+  CARD-2024-002,XYZ789PQR,...            ✓ Different license plates
+
+═══════════════════════════════════════════════════════════════════════════
+
+📊 COMPLETE WORKFLOW NOW:
+
+  VEHICLE ARRIVES
+       ↓
+  📹 Watch video (top-left)
+       ↓
+  📸 Click "CAPTURE LICENSE PLATE"
+       ↓
+  YOLO detects license plate region
+       ↓
+  Crop image to plate area only
+       ↓
+  ✓ SNAPSHOT displays cropped image (380×140px below video)
+       ↓
+  OCR extracts text: "ABC123XYZ"
+       ↓
+  ✓ EXTRACTED TEXT box shows: "ABC123XYZ" (purple, large, bold)
+       ↓
+  OPERATOR ACTIONS:
+  ├─ Enter Card ID: "CARD-2024-001" (FROM PARKING TICKET)
+  ├─ Enter Slot: "A1"
+  └─ Click "CHECK IN (IN)"
+       ↓
+  SYSTEM SAVES:
+  ├─ card_id: "CARD-2024-001" ✓
+  ├─ license_plate: "ABC123XYZ" ✓ (from OCR)
+  ├─ slot: "A1" ✓
+  ├─ time_in: current time ✓
+  └─ status: "IN" ✓
+       ↓
+  ✓ CONFIRMATION shows all details
+  ✓ TABLE updates
+  ✓ CSV saved with correct data
+
+═══════════════════════════════════════════════════════════════════════════
+
+🔍 KEY CONCEPTS:
+
+Card ID (Parking Ticket):
+  • Operator sees on parking ticket
+  • Manually typed by operator
+  • Example: CARD-2024-001234, PK-2024-5678, ABC-12345
+  • Used to identify parking transaction
+  • Human-readable ticket number
+
+License Plate (Vehicle ID):
+  • Automatically extracted from camera image
+  • Recognized by OCR algorithm
+  • Example: ABC-123-XYZ, AB12CDE, 12AB-XYZ
+  • Identifies the vehicle
+  • May appear multiple times (same vehicle, different times)
+
+Why Both?
+  • Card ID = Administrative/billing identifier
+  • License Plate = Vehicle identifier
+  • Allows proper fee calculation
+  • Enables vehicle history tracking
+  • Prevents data errors
+
+═══════════════════════════════════════════════════════════════════════════
+
+✅ TESTING VERIFICATION:
+
+Test Snapshot Display:
+  1. Run application
+  2. Point camera at license plate
+  3. Click "📸 CAPTURE LICENSE PLATE"
+  4. Check: Image appears below video ✓
+  5. Verify: Shows only license plate region (cropped) ✓
+
+Test License Plate Display:
+  1. After capture, check purple box
+  2. Verify: Shows extracted text (e.g., "ABC123XYZ") ✓
+  3. Verify: Card ID field is EMPTY ✓
+  4. Operator manually enters card number ✓
+
+Test CSV Data:
+  1. Complete check-in
+  2. Open parking_records.csv
+  3. Verify:
+     - Card ID column has operator-entered value ✓
+     - License Plate column has captured value ✓
+     - They are DIFFERENT ✓
+
+═══════════════════════════════════════════════════════════════════════════
+
+🚀 HOW TO USE (New Workflow):
+
+STEP-BY-STEP:
+  1. Vehicle pulls up to camera
+  2. Watch live video feed showing vehicle
+  3. Click "📸 CAPTURE LICENSE PLATE" button
+     → Snapshot appears showing cropped license plate
+     → Purple box shows extracted text (e.g., "ABC123XYZ")
+     → Status message: "✓ License plate captured - ABC123XYZ"
+  
+  4. Operator receives parking ticket from customer
+  5. Operator enters Card ID from ticket (e.g., "CARD-2024-001")
+  6. Operator enters Slot number (e.g., "A1")
+  7. Click "✅ CHECK IN (IN)" button
+     → Confirmation shows:
+        Card ID: CARD-2024-001
+        License Plate: ABC123XYZ
+        Slot: A1
+     → Record saved to CSV with both values
+     → Table updated
+
+═══════════════════════════════════════════════════════════════════════════
+
+⚙️ CODE CHANGES MADE:
+
+File: main_parking.py
+
+1. Added variable (Line ~163):
+   self.captured_license_plate = None
+
+2. Modified capture_plate() (Lines ~580-630):
+   - Display snapshot: setPixmap(scaled_pixmap)
+   - Store plate: self.captured_license_plate = plate_text
+   - Display in purple box: extracted_plate_label.setText(plate_text)
+
+3. Modified check_in() (Lines ~640-690):
+   - Check if plate captured: if not self.captured_license_plate: ...
+   - Use captured plate: 'license_plate': self.captured_license_plate
+   - Show both in message: f"License Plate: {self.captured_license_plate}"
+
+═══════════════════════════════════════════════════════════════════════════
+
+🎯 SUMMARY OF FIXES:
+
+Problem 1: Snapshot not showing image
+  Fix: Convert crop to QPixmap and display with setPixmap()
+  Result: ✓ Now shows actual captured license plate image
+
+Problem 2: Card ID auto-filled with license plate
+  Fix: Keep Card ID empty, store plate in variable
+  Result: ✓ Operator enters Card ID manually
+
+Problem 3: CSV had wrong data (Card ID = License Plate)
+  Fix: Use self.captured_license_plate in record
+  Result: ✓ CSV now has correct separate values
+
+═══════════════════════════════════════════════════════════════════════════
+
+✓ Version 3.2 Complete
+✓ All three issues fixed
+✓ Tested and working
+✓ Ready for production
+
+Date: January 12, 2026
+Status: ✅ Production Ready
+
+═══════════════════════════════════════════════════════════════════════════

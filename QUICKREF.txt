@@ -1,0 +1,65 @@
+# ⚡ Quick Reference Card
+
+## 🚀 Launch Command
+```bash
+cd ~/draftK && source venv/bin/activate && python3 main.py
+```
+
+## 📋 Key Files
+
+| File | Purpose |
+|------|---------|
+| `main.py` | Main application |
+| `requirements.txt` | Dependencies |
+| `GETTING_STARTED.md` | Quick start |
+| `README.md` | Full guide |
+| `TROUBLESHOOTING.md` | Problem solving |
+
+## ⚙️ Installation (One-time)
+```bash
+cd ~/draftK
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## ✅ Verify Setup
+```bash
+python3 verify_setup.py
+```
+
+## 📸 Using the App
+1. **Run:** `python3 main.py`
+2. **View:** Watch live camera feed
+3. **Capture:** Click capture button
+4. **Results:** See detection in table & CSV
+
+## 📁 Generated Files
+- `captured_images/` - Saved images
+- `license_plate_records.csv` - Detected plates
+
+## 🆘 If Issues
+1. Check: `python3 verify_setup.py`
+2. Read: `TROUBLESHOOTING.md`
+3. Logs: Check `/tmp/app.log`
+
+## 🎯 Features
+✅ Real-time camera feed (30 FPS)  
+✅ YOLO license plate detection  
+✅ OCR text recognition  
+✅ Automatic data recording  
+✅ CSV export  
+✅ Image storage  
+
+## 🔧 Requirements
+- Python 3.7+
+- 4GB RAM (minimum)
+- Webcam or camera device
+- Linux desktop environment
+
+## 📞 Help
+- Quick Start: `GETTING_STARTED.md`
+- Technical: `IMPLEMENTATION_GUIDE.md`
+- Problems: `TROUBLESHOOTING.md`
+
+---
+**Version 2.1 | Production Ready | 100% English**

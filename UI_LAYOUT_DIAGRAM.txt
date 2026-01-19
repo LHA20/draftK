@@ -1,0 +1,311 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                   🅿️  PARKING MANAGEMENT SYSTEM v3.1                           ║
+║                         Professional UI Layout                                 ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                │
+│  ┌──────────────────────────────┐  ┌──────────────────────────────────────┐  │
+│  │ 📹 LIVE CAMERA FEED          │  │ 🚗 CHECK IN - VEHICLE ENTRY          │  │
+│  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│  │                              │  │                                      │  │
+│  │      ┌────────────────────┐  │  │  Card ID:     ┌──────────────────┐ │  │
+│  │      │                    │  │  │              │  Enter card ID   │ │  │
+│  │      │                    │  │  │              └──────────────────┘ │  │
+│  │      │    [VIDEO FEED]    │  │  │                                    │  │
+│  │      │                    │  │  │  Parking Slot: ┌──────────────────┐ │  │
+│  │      │                    │  │  │                │  Enter slot #    │ │  │
+│  │      │                    │  │  │                └──────────────────┘ │  │
+│  │      └────────────────────┘  │  │                                    │  │
+│  │      (380×260px)             │  │  ┌──────────────────────────────┐  │  │
+│  │                              │  │  │ 📸 CAPTURE LICENSE PLATE     │  │  │
+│  │                              │  │  └──────────────────────────────┘  │  │
+│  │ 📸 CAPTURED IMAGE            │  │                                    │  │
+│  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │  ┌──────────────────────────────┐  │  │
+│  │     ┌─────────────────────┐  │  │  │  ✅ CHECK IN (IN)            │  │  │
+│  │     │                     │  │  │  └──────────────────────────────┘  │  │
+│  │     │  [SNAPSHOT IMAGE]   │  │  │                                    │  │
+│  │     │                     │  │  │ 🚪 CHECK OUT - VEHICLE EXIT       │  │
+│  │     │                     │  │  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│  │     └─────────────────────┘  │  │                                    │  │
+│  │     (380×140px)              │  │  License Plate: ┌──────────────────┐ │  │
+│  │                              │  │                │ Enter license #   │ │  │
+│  │ 🔤 EXTRACTED TEXT            │  │                └──────────────────┘ │  │
+│  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │                                    │  │
+│  │ ┌─────────────────────────┐  │  │  ┌──────────────────────────────┐  │  │
+│  │ │ ABC-XYZ-789             │  │  │  │ 🏁 CHECK OUT (OUT)           │  │  │
+│  │ │ [Large Bold Purple Text] │  │  │  └──────────────────────────────┘  │  │
+│  │ └─────────────────────────┘  │  │                                    │  │
+│  │ (Courier New, 16pt, Bold)    │  │ 💳 TRANSACTION INFORMATION         │  │
+│  │                              │  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│  │                              │  │ ┌──────────────────────────────┐    │  │
+│  │                              │  │ │ System Ready ✓               │    │  │
+│  │                              │  │ │ [Green background]           │    │  │
+│  │                              │  │ └──────────────────────────────┘    │  │
+│  │                              │  │                                    │  │
+│  │                              │  │ ┌──────────────────────────────┐    │  │
+│  │                              │  │ │ 💰 PARKING FEE              │    │  │
+│  │                              │  │ │     0 VND                    │    │  │
+│  │                              │  │ │ [Yellow/Amber background]    │    │  │
+│  │                              │  │ └──────────────────────────────┘    │  │
+│  │                              │  │                                    │  │
+│  │                              │  │ 📊 PARKING RECORDS & HISTORY       │  │
+│  │                              │  │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ │  │
+│  │                              │  │ ┌──────────────────────────────┐    │  │
+│  │                              │  │ │ ║ Card║ License║ Time In║ ... ║   │  │
+│  │                              │  │ ├──────────────────────────────┤    │  │
+│  │                              │  │ │ A001 │ ABC123  │ 10:30   │     │   │  │
+│  │                              │  │ │ A002 │ XYZ789  │ 11:15   │     │   │  │
+│  │                              │  │ │ A003 │ PQR456  │ 09:45   │     │   │  │
+│  │                              │  │ │ ... [Scrollable, Max 250px]     │  │  │
+│  │                              │  │ └──────────────────────────────┘    │  │
+│  │                              │  │                                    │  │
+│  │                              │  │ 📥 DATA MANAGEMENT                 │  │
+│  │                              │  │ ┌──────────────────────────────┐    │  │
+│  │                              │  │ │ 💾 DOWNLOAD EXCEL REPORT     │    │  │
+│  │                              │  │ └──────────────────────────────┘    │  │
+│  │                              │  │                                    │  │
+│  └──────────────────────────────┘  └──────────────────────────────────────┘  │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COLOR LEGEND:
+═════════════════════════════════════════════════════════════════════════════
+
+📹 Video Header             → Dark Blue (#1e3a8a)      - Professional, calming
+🚗 Check-In Section         → Emerald Green (#059669)  - Entry, positive action
+🚪 Check-Out Section        → Red (#dc2626)            - Exit, important action
+💳 Status/Info Header       → Dark Gray (#1f2937)      - Neutral information
+Status Message (Success)    → Light Green (#f0fdf4)    - Positive feedback
+💰 Fee Display              → Amber (#fef3cd)          - Attention-grabbing
+📊 Records Header           → Bright Blue (#1e40af)    - Data organization
+🔤 License Plate Text       → Purple (#7c3aed)         - Important highlight
+Input Fields                → Light Gray (#f9fafb)     - Clean, modern
+Borders                     → Light Gray (#e0e0e0)     - Subtle separation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+COMPONENT DIMENSIONS:
+═════════════════════════════════════════════════════════════════════════════
+
+LEFT PANEL:
+  Max Width:              520px (Fixed)
+  Video Feed:             380×260px
+  Snapshot Display:       380×140px
+  License Plate Text:     Font size 16pt (Bold)
+  Border Radius:          10px
+  Borders:                2px solid #e0e0e0
+
+RIGHT PANEL:
+  Width:                  Flexible (fills remaining space)
+  Input Field Height:     32px (Unified)
+  Button Heights:         40-45px (Varies by importance)
+  Table Max Height:       250px (Scrollable)
+  Border Radius:          10px
+  Section Spacing:        10px
+
+TYPOGRAPHY:
+  Section Headers:        Arial, 10pt, Bold
+  Input Labels:           Arial, 9pt, Bold
+  License Plate Text:     Courier New, 16pt, Bold
+  Button Text:            Arial, 9pt, Bold
+  Table Text:             Arial, 9pt, Regular
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER WORKFLOW:
+═════════════════════════════════════════════════════════════════════════════
+
+CHECK-IN WORKFLOW:
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1. User watches live video feed (top-left, 380×260px)                  │
+│ 2. User clicks "📸 CAPTURE LICENSE PLATE" button (cyan)                │
+│    ├─ System captures current video frame                              │
+│    ├─ Runs YOLO license plate detection                                │
+│    ├─ Extracts text using EasyOCR                                      │
+│    ├─ Displays snapshot in area below video                            │
+│    └─ Shows extracted text in purple box                               │
+│ 3. User enters Card ID in input field                                  │
+│ 4. User enters Parking Slot Number in input field                      │
+│ 5. User clicks "✅ CHECK IN (IN)" button (green)                       │
+│    ├─ System validates inputs                                          │
+│    ├─ Creates record with status = "IN"                                │
+│    ├─ Saves to parking_records.csv                                     │
+│    ├─ Updates records table                                            │
+│    └─ Shows "Vehicle checked in" message                               │
+│ 6. System ready for next vehicle                                       │
+└────────────────────────────────────────────────────────────────────────┘
+
+CHECK-OUT WORKFLOW:
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1. User enters License Plate number in CHECK OUT section (or auto-fill) │
+│ 2. User clicks "🏁 CHECK OUT (OUT)" button (red)                       │
+│    ├─ System looks up license plate in CSV                             │
+│    ├─ Validates vehicle exists and status = "IN"                       │
+│    ├─ Calculates parking duration                                      │
+│    ├─ Calculates fee:                                                  │
+│    │  • If duration ≤ 2 hours: 20,000 VND                              │
+│    │  • If duration > 2 hours: 20,000 + (hours - 2) × 10,000 VND       │
+│    ├─ Updates record: status = "OUT", Time Out = now, Fee = amount     │
+│    ├─ Saves to CSV                                                     │
+│    ├─ Updates records table                                            │
+│    ├─ Displays fee in yellow box                                       │
+│    └─ Shows confirmation message                                       │
+│ 3. System ready for next vehicle                                       │
+└────────────────────────────────────────────────────────────────────────┘
+
+DATA MANAGEMENT:
+┌────────────────────────────────────────────────────────────────────────┐
+│ 1. View all parking records in scrollable table (7 columns)            │
+│ 2. Click "💾 DOWNLOAD EXCEL REPORT" button (purple)                    │
+│    ├─ File dialog opens                                                │
+│    ├─ User selects save location                                       │
+│    ├─ System generates Excel file with:                                │
+│    │  • Professional formatting                                        │
+│    │  • Bold headers                                                   │
+│    │  • Proper column widths                                           │
+│    │  • Currency formatting for fees                                   │
+│    │  • All parking records                                            │
+│    └─ File saved to user's location                                    │
+│ 3. System maintains CSV backup (auto-saved)                            │
+└────────────────────────────────────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION DETAILS:
+═════════════════════════════════════════════════════════════════════════════
+
+📹 LIVE CAMERA FEED (Top-Left)
+  ├─ Header: Dark blue background, white text
+  ├─ Display: Live video from webcam
+  ├─ Size: 380×260px (compact, professional)
+  ├─ Border: 3px solid dark blue
+  ├─ Updates: 30 FPS from camera thread
+  └─ Purpose: Show vehicle arrival in real-time
+
+📸 CAPTURED LICENSE PLATE IMAGE (Below Video)
+  ├─ Header: Green background, white text
+  ├─ Display: Snapshot of captured license plate area
+  ├─ Size: 380×140px
+  ├─ Border: 2px dashed green
+  ├─ Updates: When user clicks "CAPTURE" button
+  ├─ Initial: Shows "No snapshot captured yet"
+  └─ Purpose: Verify captured image quality
+
+🔤 EXTRACTED TEXT (Bottom-Left)
+  ├─ Header: Purple background
+  ├─ Display: OCR-extracted license plate number
+  ├─ Font: Courier New, 16pt, Bold
+  ├─ Color: Purple text on light purple background
+  ├─ Border: 2px solid purple
+  ├─ Updates: When OCR processing completes
+  ├─ Initial: Shows "Awaiting capture..."
+  └─ Purpose: Show recognized license plate text
+
+🚗 CHECK IN - VEHICLE ENTRY (Top-Right)
+  ├─ Header: Emerald green background
+  ├─ Card ID Input: Text field for vehicle card
+  ├─ Slot Input: Text field for parking slot number
+  ├─ Capture Button: Cyan color (45px height)
+  ├─ Check-in Button: Green color (42px height)
+  └─ Purpose: Register vehicle entering parking
+
+🚪 CHECK OUT - VEHICLE EXIT (Middle-Right)
+  ├─ Header: Red background
+  ├─ License Plate Input: Text field for license plate
+  ├─ Check-out Button: Red color (42px height)
+  └─ Purpose: Register vehicle leaving parking
+
+💳 TRANSACTION INFORMATION (Middle-Right)
+  ├─ Header: Dark gray background
+  ├─ Status Message:
+  │  ├─ Green background for success
+  │  ├─ Red background for errors
+  │  └─ Shows feedback from operations
+  ├─ Fee Display:
+  │  ├─ Amber/yellow background
+  │  ├─ Large, bold text
+  │  ├─ Shows amount in VND
+  │  └─ Only shown after check-out
+  └─ Purpose: Provide immediate feedback
+
+📊 PARKING RECORDS TABLE (Lower-Right)
+  ├─ Header: Bright blue background
+  ├─ Columns: 7 (Card ID, License Plate, Time In, Time Out, Slot, Status, Fee)
+  ├─ Rows: Alternating white/light gray
+  ├─ Max Height: 250px (scrollable)
+  ├─ Updates: After each check-in/out
+  ├─ Color-Coding: Status column color-coded
+  └─ Purpose: View all parking transactions
+
+📥 DATA MANAGEMENT (Bottom-Right)
+  ├─ Header: Purple background
+  ├─ Download Button: Purple color (40px height)
+  ├─ Generates: Excel file with formatting
+  ├─ Auto-saves: CSV file after each operation
+  └─ Purpose: Export and backup data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KEY FEATURES:
+═════════════════════════════════════════════════════════════════════════════
+
+✓ Compact Layout:         380px video + controls fit on one screen
+✓ Professional Look:      Modern colors, spacing, and typography
+✓ Clear Organization:     5 distinct sections for different tasks
+✓ Visual Hierarchy:       Important elements are larger and more prominent
+✓ User Feedback:          Status messages and fee display
+✓ Data Visibility:        All records visible in scrollable table
+✓ Responsive Design:      Left panel fixed, right panel flexible
+✓ Accessibility:          High contrast, readable fonts, clear labels
+✓ Intuitive Workflow:     Top-to-bottom, left-to-right flow
+✓ Professional Colors:    Business-appropriate color scheme
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TESTING CHECKLIST:
+═════════════════════════════════════════════════════════════════════════════
+
+UI Components:
+  [✓] Video feed displays correctly
+  [✓] Snapshot area shows captured image
+  [✓] License plate text displays prominently
+  [✓] All input fields accept text
+  [✓] All buttons are clickable
+  [✓] Table displays records
+  [✓] Status messages appear
+  [✓] Fee displays correctly
+
+Functionality:
+  [✓] Capture button extracts license plate
+  [✓] Check-in saves records
+  [✓] Check-out calculates fee correctly
+  [✓] Table updates after operations
+  [✓] Excel export works
+  [✓] CSV auto-saves
+  [✓] Error messages display
+
+User Experience:
+  [✓] Layout is clean and professional
+  [✓] Colors are appealing and accessible
+  [✓] Workflow is intuitive
+  [✓] Feedback is clear and immediate
+  [✓] Controls are well-organized
+  [✓] Text is readable
+  [✓] Buttons are easy to click
+
+Performance:
+  [✓] Application starts quickly
+  [✓] UI renders smoothly
+  [✓] Responds to user input immediately
+  [✓] Table scrolls without lag
+  [✓] No visual glitches
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 PARKING MANAGEMENT SYSTEM v3.1
+Professional UI - January 12, 2026 - Status: ✅ Complete & Tested
+
+═════════════════════════════════════════════════════════════════════════════
