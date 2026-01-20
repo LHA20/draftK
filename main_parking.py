@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Parking Management System - Complete Version
-Quản lý bãi gửi xe với nhận dạng biển số xe
+Parking Management System - Complete Version with Serial Port Support
+Integrated YOLO license plate detection, EasyOCR text extraction, and Arduino/ESP32 RFID reader support
 """
 
 import sys
@@ -12,13 +12,15 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import threading
 import csv
-from decimal import Decimal
+import json
+import serial
+import serial.tools.list_ports
 
 import cv2
 import numpy as np
 import torch
 
-# Monkey-patch torch.load
+# Monkey-patch torch.load to disable security check for YOLO model loading
 _original_torch_load = torch.load
 def patched_torch_load(f, *args, **kwargs):
     kwargs['weights_only'] = False
@@ -31,25 +33,32 @@ import easyocr
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel, QTableWidget, QTableWidgetItem, QLineEdit,
-    QMessageBox, QHeaderView, QFileDialog
+    QMessageBox, QHeaderView, QFileDialog, QComboBox, QGroupBox
 )
 from PyQt5.QtGui import QImage, QPixmap, QFont, QColor
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
-# Initialize OCR reader
+# Pre-load OCR reader to avoid delays during first capture
 print("Loading OCR reader...", end=" ", flush=True)
 OCR_READER = easyocr.Reader(['en'], gpu=False)
 print("✓")
 
 
 class CameraSignals(QObject):
-    """Signals object to emit events from worker thread"""
-    frame_ready = pyqtSignal(np.ndarray)
-    error_signal = pyqtSignal(str)
+    """Signal emitter for camera worker thread events"""
+    frame_ready = pyqtSignal(np.ndarray)  # Emitted when new frame is captured
+    error_signal = pyqtSignal(str)  # Emitted when camera error occurs
+
+
+class SerialSignals(QObject):
+    """Signal emitter for serial port worker thread events"""
+    data_received = pyqtSignal(dict)  # Emitted when JSON card scan data received
+    connection_status = pyqtSignal(bool, str)  # Emitted when connection status changes (connected, message)
+    error_signal = pyqtSignal(str)  # Emitted when serial communication error occurs
 
 
 class CameraWorker(threading.Thread):
-    """Worker thread for continuous camera capture"""
+    """Worker thread for continuous 30 FPS camera capture and YOLO inference"""
     
     def __init__(self, signals, models_path):
         super().__init__(daemon=True)
@@ -58,7 +67,7 @@ class CameraWorker(threading.Thread):
         self.cap = None
         self.license_plate_detector = None
         
-        # Load YOLO model
+        # Load YOLO model for license plate detection
         try:
             self.license_plate_detector = YOLO(str(models_path / 'license_plate_detector.pt'))
             print("✓ License plate detector model loaded")
@@ -66,7 +75,7 @@ class CameraWorker(threading.Thread):
             self.signals.error_signal.emit(f"Error loading YOLO model: {e}")
     
     def run(self):
-        """Capture frames continuously"""
+        """Continuously capture frames from webcam at 30 FPS"""
         try:
             self.is_running = True
             self.cap = cv2.VideoCapture(0)
@@ -75,6 +84,7 @@ class CameraWorker(threading.Thread):
                 self.signals.error_signal.emit("Cannot open camera")
                 return
             
+            # Set video capture parameters
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
             self.cap.set(cv2.CAP_PROP_FPS, 30)
@@ -86,6 +96,7 @@ class CameraWorker(threading.Thread):
                 if not ret:
                     break
                 
+                # Mirror the frame for better UX
                 frame = cv2.flip(frame, 1)
                 self.signals.frame_ready.emit(frame)
         
@@ -96,35 +107,118 @@ class CameraWorker(threading.Thread):
                 self.cap.release()
     
     def stop(self):
+        """Stop the camera thread gracefully"""
         self.is_running = False
 
 
+class SerialWorker(threading.Thread):
+    """Worker thread for serial port communication with Arduino/ESP32 RFID reader"""
+    
+    def __init__(self, signals):
+        super().__init__(daemon=True)
+        self.signals = signals
+        self.is_running = False
+        self.serial_port = None
+        self.port_name = None
+        self.baud_rate = None
+    
+    def set_connection(self, port_name, baud_rate):
+        """Configure port and baud rate before connection"""
+        self.port_name = port_name
+        self.baud_rate = baud_rate
+    
+    def run(self):
+        """Listen for incoming JSON data from serial port"""
+        try:
+            if not self.port_name or not self.baud_rate:
+                self.signals.error_signal.emit("Port or baud rate not set")
+                return
+            
+            self.serial_port = serial.Serial(
+                port=self.port_name,
+                baudrate=self.baud_rate,
+                timeout=1,
+                write_timeout=1
+            )
+            
+            self.is_running = True
+            self.signals.connection_status.emit(True, f"Connected to {self.port_name} @ {self.baud_rate}")
+            print(f"✓ Serial port connected: {self.port_name} @ {self.baud_rate} baud")
+            
+            while self.is_running:
+                try:
+                    if self.serial_port.in_waiting > 0:
+                        line = self.serial_port.readline().decode('utf-8').strip()
+                        
+                        if line:
+                            try:
+                                # Parse JSON data from Arduino/ESP32
+                                data = json.loads(line)
+                                # Validate JSON contains required fields
+                                if 'event' in data and 'uid' in data:
+                                    self.signals.data_received.emit(data)
+                                    print(f"Card scanned: {data.get('uid')} - Gate: {data.get('gate')}")
+                            except json.JSONDecodeError as e:
+                                self.signals.error_signal.emit(f"Invalid JSON: {line}")
+                
+                except Exception as e:
+                    if self.is_running:
+                        self.signals.error_signal.emit(f"Serial read error: {str(e)}")
+                    break
+        
+        except serial.SerialException as e:
+            self.signals.error_signal.emit(f"Serial connection error: {str(e)}")
+            self.signals.connection_status.emit(False, "Disconnected")
+        except Exception as e:
+            self.signals.error_signal.emit(f"Serial worker error: {str(e)}")
+        finally:
+            self.is_running = False
+            if self.serial_port and self.serial_port.is_open:
+                self.serial_port.close()
+            self.signals.connection_status.emit(False, "Disconnected")
+    
+    def stop(self):
+        """Stop serial worker and close port gracefully"""
+        self.is_running = False
+        if self.serial_port and self.serial_port.is_open:
+            self.serial_port.close()
+
+
+def get_available_ports():
+    """Auto-detect available serial ports from connected devices"""
+    ports = []
+    for port_info in serial.tools.list_ports.comports():
+        ports.append((port_info.device, port_info.description))
+    return ports
+
+
+
 def extract_license_plate(crop):
-    """Extract license plate text using OCR"""
+    """Extract license plate text using OCR with preprocessing"""
     try:
         if crop.size == 0:
             return None, None
         
-        # Preprocess
+        # Convert BGR to Grayscale
         if len(crop.shape) == 3:
             gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
         else:
             gray = crop
         
-        # Enhance
+        # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
         gray = clahe.apply(gray)
         
-        # Threshold
+        # Apply binary threshold with Otsu's method
         _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         
-        # Run OCR
+        # Run EasyOCR on preprocessed image
         results = OCR_READER.readtext(binary, detail=1)
         
         if not results:
             return None, None
         
-        # Combine text
+        # Combine extracted text and calculate average confidence
         full_text = ""
         total_score = 0.0
         
@@ -136,6 +230,7 @@ def extract_license_plate(crop):
                 full_text += clean_text
                 total_score += score
         
+        # Return only if extracted text has minimum length (license plate)
         if full_text and len(full_text) >= 4:
             avg_score = total_score / len(results) if results else 0.0
             return full_text.upper(), avg_score
@@ -148,42 +243,56 @@ def extract_license_plate(crop):
 
 
 class ParkingManagementUI(QMainWindow):
-    """Main UI for Parking Management System"""
+    """Main window for Parking Management System with YOLO detection and serial port support"""
     
     def __init__(self):
         super().__init__()
         self.setWindowTitle("🅿️ Parking Management System")
-        self.setGeometry(50, 50, 1800, 900)
+        self.setGeometry(50, 50, 1920, 1080)
         
         # Data storage
         self.parking_records = []
         self.models_path = Path(__file__).parent / "Automatic-License-Plate-Recognition-using-YOLOv8"
         self.csv_file = Path(__file__).parent / "parking_records.csv"
         self.current_frame = None
-        self.captured_license_plate = None  # Store extracted license plate
+        self.captured_license_plate = None  # Store extracted license plate from OCR
         
-        # Initialize CSV
+        # Temporary variables for serial card processing
+        self.pending_card_data = None  # Store card data while waiting for OCR
+        self.is_processing_card = False  # Flag to prevent concurrent card processing
+        
+        # Initialize CSV file
         self._init_csv()
         
-        # Signals
+        # Camera Signals
         self.signals = CameraSignals()
         self.signals.frame_ready.connect(self.on_frame_received)
         self.signals.error_signal.connect(self.on_camera_error)
         
-        # UI
+        # Serial Signals
+        self.serial_signals = SerialSignals()
+        self.serial_signals.data_received.connect(self.on_card_scanned)
+        self.serial_signals.connection_status.connect(self.on_serial_status_changed)
+        self.serial_signals.error_signal.connect(self.on_serial_error)
+        
+        # Serial worker thread
+        self.serial_thread = None
+        self.serial_connected = False
+        
+        # Build user interface
         self.init_ui()
         
-        # Camera thread
+        # Start camera worker thread
         self.camera_thread = CameraWorker(self.signals, self.models_path)
         self.camera_thread.start()
         
-        # Start camera after UI ready
+        # Startup timer for initialization message
         self.start_timer = QTimer()
         self.start_timer.setSingleShot(True)
         self.start_timer.timeout.connect(lambda: print("✓ System ready"))
     
     def _init_csv(self):
-        """Initialize CSV file"""
+        """Initialize CSV file with headers if it doesn't exist"""
         if not self.csv_file.exists():
             with open(self.csv_file, 'w', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
@@ -206,7 +315,7 @@ class ParkingManagementUI(QMainWindow):
         left_layout.setContentsMargins(0, 0, 0, 0)
         left_panel = QWidget()
         left_panel.setLayout(left_layout)
-        left_panel.setMaximumWidth(520)
+        left_panel.setMaximumWidth(620)
         left_panel.setStyleSheet("background-color: white; border-radius: 10px; border: 2px solid #e0e0e0;")
         
         # ---- VIDEO FEED SECTION (Top Left) ----
@@ -229,8 +338,8 @@ class ParkingManagementUI(QMainWindow):
         # Camera label (Compact size - 400x280)
         self.camera_label = QLabel()
         self.camera_label.setAlignment(Qt.AlignCenter)
-        self.camera_label.setMinimumSize(380, 260)
-        self.camera_label.setMaximumSize(480, 320)
+        self.camera_label.setMinimumSize(480, 320)
+        self.camera_label.setMaximumSize(580, 380)
         self.camera_label.setStyleSheet(
             "border: 3px solid #1e3a8a; background-color: #000000; border-radius: 8px; padding: 0px;"
         )
@@ -259,8 +368,8 @@ class ParkingManagementUI(QMainWindow):
         # Snapshot display label
         self.snapshot_label = QLabel()
         self.snapshot_label.setAlignment(Qt.AlignCenter)
-        self.snapshot_label.setMinimumSize(380, 100)
-        self.snapshot_label.setMaximumSize(480, 140)
+        self.snapshot_label.setMinimumSize(480, 120)
+        self.snapshot_label.setMaximumSize(580, 160)
         self.snapshot_label.setStyleSheet(
             "border: 2px dashed #059669; background-color: #ecfdf5; border-radius: 6px; "
             "color: #047857; font-weight: bold;"
@@ -287,6 +396,74 @@ class ParkingManagementUI(QMainWindow):
         snapshot_layout.addWidget(self.extracted_plate_label)
         
         left_layout.addWidget(snapshot_container)
+        
+        # ---- PARKING SLOTS SECTION (Bottom) ----
+        slots_container = QWidget()
+        slots_layout = QVBoxLayout(slots_container)
+        slots_layout.setSpacing(6)
+        slots_layout.setContentsMargins(12, 12, 12, 12)
+        slots_container.setStyleSheet("background-color: white;")
+        
+        # Slots header
+        slots_header = QLabel("🅿️ PARKING SLOTS STATUS")
+        slots_header.setFont(QFont("Arial", 10, QFont.Bold))
+        slots_header.setAlignment(Qt.AlignCenter)
+        slots_header.setStyleSheet(
+            "background-color: #1f2937; color: white; padding: 8px; border-radius: 5px; "
+            "font-weight: bold; letter-spacing: 1px;"
+        )
+        slots_layout.addWidget(slots_header)
+        
+        # Grid of parking slots (3 rows x 4 columns = 12 slots)
+        slots_grid = QWidget()
+        grid_layout = QVBoxLayout(slots_grid)
+        grid_layout.setSpacing(8)
+        grid_layout.setContentsMargins(8, 8, 8, 8)
+        
+        # Initialize slot buttons/labels (12 slots)
+        self.slot_buttons = []
+        
+        for row in range(3):
+            row_widget = QWidget()
+            row_layout = QHBoxLayout(row_widget)
+            row_layout.setSpacing(8)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            
+            for col in range(4):
+                slot_num = row * 4 + col + 1  # Slot 1-12
+                
+                slot_btn = QPushButton(f"SLOT {slot_num}")
+                slot_btn.setMinimumHeight(50)
+                slot_btn.setFont(QFont("Arial", 9, QFont.Bold))
+                slot_btn.setStyleSheet(
+                    "QPushButton {"
+                    "  background-color: #10b981;"
+                    "  color: white;"
+                    "  font-weight: bold;"
+                    "  border-radius: 6px;"
+                    "  border: 2px solid #059669;"
+                    "  padding: 6px;"
+                    "}"
+                    "QPushButton:hover {"
+                    "  background-color: #059669;"
+                    "}"
+                )
+                slot_btn.setEnabled(False)  # Disable clicking
+                
+                self.slot_buttons.append({
+                    'button': slot_btn,
+                    'slot_num': slot_num,
+                    'is_occupied': False
+                })
+                
+                row_layout.addWidget(slot_btn)
+            
+            grid_layout.addWidget(row_widget)
+        
+        slots_grid.setStyleSheet("background-color: white;")
+        slots_layout.addWidget(slots_grid)
+        
+        left_layout.addWidget(slots_container)
         left_layout.addStretch()
         
         # ====================== RIGHT PANEL (Professional Controls) ======================
@@ -301,6 +478,83 @@ class ParkingManagementUI(QMainWindow):
         scroll_layout = QVBoxLayout()
         scroll_layout.setSpacing(10)
         scroll_layout.setContentsMargins(12, 12, 12, 12)
+        
+        # ============ SECTION 0: SERIAL PORT CONFIGURATION ============
+        serial_section = QWidget()
+        serial_layout = QVBoxLayout(serial_section)
+        serial_layout.setSpacing(8)
+        serial_layout.setContentsMargins(10, 10, 10, 10)
+        
+        serial_header = QLabel("🔌 ARDUINO/ESP32 CONFIGURATION")
+        serial_header.setFont(QFont("Arial", 10, QFont.Bold))
+        serial_header.setAlignment(Qt.AlignCenter)
+        serial_header.setStyleSheet(
+            "background-color: #2563eb; color: white; padding: 8px; border-radius: 5px; "
+            "font-weight: bold; letter-spacing: 0.5px;"
+        )
+        serial_layout.addWidget(serial_header)
+        
+        # Port selection
+        port_layout = QHBoxLayout()
+        port_label = QLabel("Port")
+        port_label.setFont(QFont("Arial", 9, QFont.Bold))
+        port_label.setMinimumWidth(120)
+        port_label.setStyleSheet("color: #374151;")
+        port_layout.addWidget(port_label)
+        self.port_combo = QComboBox()
+        self.port_combo.setMinimumHeight(32)
+        self.port_combo.setStyleSheet(
+            "border: 2px solid #d1d5db; border-radius: 5px; padding: 6px; background-color: #f9fafb;"
+            "QComboBox:focus { border: 2px solid #2563eb; }"
+        )
+        self._refresh_ports()
+        port_layout.addWidget(self.port_combo)
+        
+        refresh_port_btn = self._create_button("🔄", "#6b7280", "#4b5563", 32, self._refresh_ports)
+        refresh_port_btn.setMaximumWidth(50)
+        port_layout.addWidget(refresh_port_btn)
+        serial_layout.addLayout(port_layout)
+        
+        # Baud rate selection
+        baud_layout = QHBoxLayout()
+        baud_label = QLabel("Baud Rate")
+        baud_label.setFont(QFont("Arial", 9, QFont.Bold))
+        baud_label.setMinimumWidth(120)
+        baud_label.setStyleSheet("color: #374151;")
+        baud_layout.addWidget(baud_label)
+        self.baud_combo = QComboBox()
+        self.baud_combo.addItems(['9600', '19200', '38400', '57600', '115200'])
+        self.baud_combo.setCurrentText('9600')
+        self.baud_combo.setMinimumHeight(32)
+        self.baud_combo.setStyleSheet(
+            "border: 2px solid #d1d5db; border-radius: 5px; padding: 6px; background-color: #f9fafb;"
+            "QComboBox:focus { border: 2px solid #2563eb; }"
+        )
+        baud_layout.addWidget(self.baud_combo)
+        serial_layout.addLayout(baud_layout)
+        
+        # Connection status indicator and button
+        status_layout = QHBoxLayout()
+        self.serial_status_label = QLabel("🔴 Disconnected")
+        self.serial_status_label.setFont(QFont("Arial", 9, QFont.Bold))
+        self.serial_status_label.setStyleSheet("color: #dc2626;")
+        status_layout.addWidget(self.serial_status_label)
+        status_layout.addStretch()
+        
+        self.serial_connect_btn = self._create_button(
+            "🔗 CONNECT",
+            "#2563eb",
+            "#1d4ed8",
+            32,
+            self.toggle_serial_connection
+        )
+        status_layout.addWidget(self.serial_connect_btn)
+        serial_layout.addLayout(status_layout)
+        
+        serial_section.setStyleSheet(
+            "background-color: white; border: 1px solid #e5e7eb; border-radius: 6px;"
+        )
+        scroll_layout.addWidget(serial_section)
         
         # ============ SECTION 1: CHECK IN (Vehicle Entry) ============
         checkin_section = QWidget()
@@ -548,8 +802,439 @@ class ParkingManagementUI(QMainWindow):
         btn.clicked.connect(callback)
         return btn
     
+    def _refresh_ports(self):
+        """Auto-detect and populate available serial ports"""
+        self.port_combo.clear()
+        ports = get_available_ports()
+        
+        if ports:
+            for port_name, port_desc in ports:
+                self.port_combo.addItem(f"{port_name} - {port_desc}", port_name)
+        else:
+            self.port_combo.addItem("No ports found", None)
+    
+    def toggle_serial_connection(self):
+        """Toggle serial port connection - Connect or disconnect from Arduino/ESP32"""
+        if self.serial_connected:
+            # Disconnect from serial port
+            if self.serial_thread:
+                self.serial_thread.stop()
+                self.serial_thread.join(timeout=2)
+                self.serial_thread = None
+            self.serial_connected = False
+            self.on_serial_status_changed(False, "Disconnected")
+        else:
+            # Connect to selected serial port
+            port_name = self.port_combo.currentData()
+            baud_rate = int(self.baud_combo.currentText())
+            
+            if not port_name:
+                QMessageBox.warning(self, "Error", "No serial port selected")
+                return
+            
+            # Create and start serial worker thread
+            self.serial_thread = SerialWorker(self.serial_signals)
+            self.serial_thread.set_connection(port_name, baud_rate)
+            self.serial_thread.start()
+            self.serial_connected = True
+    
+    def on_serial_status_changed(self, connected, message):
+        """Update serial connection status indicator in UI"""
+        self.serial_connected = connected
+        
+        if connected:
+            # Show connected status (green indicator)
+            self.serial_status_label.setText("🟢 Connected")
+            self.serial_status_label.setStyleSheet("color: #059669; font-weight: bold;")
+            self.serial_connect_btn.setText("🔌 DISCONNECT")
+            self.serial_connect_btn.setStyleSheet(
+                "QPushButton { background-color: #dc2626; color: white; font-weight: bold; "
+                "border-radius: 6px; border: none; padding: 6px; }"
+                "QPushButton:hover { background-color: #b91c1c; }"
+            )
+            print(f"✓ {message}")
+        else:
+            # Show disconnected status (red indicator)
+            self.serial_status_label.setText("🔴 Disconnected")
+            self.serial_status_label.setStyleSheet("color: #dc2626; font-weight: bold;")
+            self.serial_connect_btn.setText("🔗 CONNECT")
+            self.serial_connect_btn.setStyleSheet(
+                "QPushButton { background-color: #2563eb; color: white; font-weight: bold; "
+                "border-radius: 6px; border: none; padding: 6px; }"
+                "QPushButton:hover { background-color: #1d4ed8; }"
+            )
+            if message != "Disconnected":
+                print(f"✗ {message}")
+    
+    def on_serial_error(self, error_msg):
+        """Handle and display serial port errors"""
+        print(f"❌ Serial Error: {error_msg}")
+        self.status_label.setText(f"Status: Serial Error - {error_msg}")
+    
+    def on_card_scanned(self, card_data):
+        """Handle card scan event from Arduino/ESP32 RFID reader
+        
+        Expected JSON format:
+        {"event":"CARD_SCAN","uid":"A1B2C3D4","gate":"ENTRY","slot":1}
+        
+        Process:
+        1. Store card data temporarily
+        2. Trigger license plate capture
+        3. Wait for OCR extraction to complete
+        4. Auto check-in/out based on gate field
+        """
+        try:
+            # Prevent concurrent card processing
+            if self.is_processing_card:
+                print("⚠️  Already processing a card scan, skipping...")
+                return
+            
+            self.is_processing_card = True
+            
+            # Extract card data from JSON
+            card_id = card_data.get('uid', '').strip()
+            gate = card_data.get('gate', 'ENTRY').upper()  # ENTRY or EXIT
+            slot = card_data.get('slot', '')
+            
+            # Validate card data
+            if not card_id:
+                self.status_label.setText("Status: Invalid card ID received")
+                self.is_processing_card = False
+                return
+            
+            # Store card data for later use
+            self.pending_card_data = {
+                'card_id': card_id,
+                'gate': gate,
+                'slot': str(slot) if slot else ''
+            }
+            
+            # Auto-fill the card ID and slot fields
+            self.card_id_input.setText(card_id)
+            if self.pending_card_data['slot']:
+                self.slot_input.setText(self.pending_card_data['slot'])
+            
+            # Update status to show card received
+            self.status_label.setText(f"Status: Card scanned ({card_id}) - {gate} | Capturing license plate...")
+            print(f"\n📱 Card event received: ID={card_id}, Gate={gate}, Slot={slot}")
+            
+            # Trigger license plate capture after small delay
+            QTimer.singleShot(200, self._process_card_capture)
+        
+        except Exception as e:
+            self.status_label.setText(f"Status: Error processing card data - {str(e)}")
+            print(f"❌ Card processing error: {e}")
+            self.is_processing_card = False
+    
+    def _process_card_capture(self):
+        """Capture license plate for the pending card scan"""
+        if not self.pending_card_data or self.current_frame is None:
+            self.status_label.setText("Status: No frame available for capture")
+            self.is_processing_card = False
+            return
+        
+        try:
+            # Check if YOLO model is loaded
+            if not self.camera_thread.license_plate_detector:
+                self.status_label.setText("Status: YOLO model not ready")
+                self.is_processing_card = False
+                return
+            
+            # Run YOLO detection on current frame
+            detections = self.camera_thread.license_plate_detector(self.current_frame)[0]
+            
+            if len(detections.boxes) == 0:
+                self.status_label.setText(f"Status: No license plate detected for {self.pending_card_data['card_id']}")
+                print(f"⚠️  No plate detected for card {self.pending_card_data['card_id']}")
+                self.is_processing_card = False
+                return
+            
+            # Extract first detection bounding box
+            detection = detections.boxes.data.tolist()[0]
+            x1, y1, x2, y2, score, class_id = detection
+            
+            # Crop license plate region
+            crop = self.current_frame[int(y1):int(y2), int(x1):int(x2), :]
+            
+            # Display snapshot (cropped license plate)
+            rgb_crop = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_crop.shape
+            bytes_per_line = 3 * w
+            qt_image = QImage(rgb_crop.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(qt_image)
+            scaled_pixmap = pixmap.scaledToWidth(380, Qt.SmoothTransformation)
+            self.snapshot_label.setPixmap(scaled_pixmap)
+            
+            # Save captured images to disk
+            try:
+                captured_dir = Path(__file__).parent / "captured_images"
+                captured_dir.mkdir(exist_ok=True)
+                
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+                
+                # Save full frame
+                full_frame_path = captured_dir / f"full_frame_{timestamp}.jpg"
+                cv2.imwrite(str(full_frame_path), self.current_frame)
+                
+                # Save cropped license plate
+                crop_path = captured_dir / f"license_plate_{timestamp}.jpg"
+                cv2.imwrite(str(crop_path), crop)
+                
+                print(f"✓ Captured images saved: {timestamp}")
+            except Exception as save_error:
+                print(f"⚠️  Could not save images: {save_error}")
+            
+            # Run OCR to extract license plate text
+            self.status_label.setText(f"Status: Extracting text for {self.pending_card_data['card_id']}...")
+            plate_text, conf = extract_license_plate(crop)
+            
+            if not plate_text:
+                self.status_label.setText(f"Status: OCR failed for {self.pending_card_data['card_id']} - no text extracted")
+                self.extracted_plate_label.setText("OCR Failed")
+                print(f"❌ OCR extraction failed for card {self.pending_card_data['card_id']}")
+                self.is_processing_card = False
+                return
+            
+            # Successfully extracted license plate
+            self.captured_license_plate = plate_text
+            self.extracted_plate_label.setText(plate_text)
+            self.extracted_plate_label.setStyleSheet(
+                "background-color: #f3e8ff; color: #6d28d9; padding: 10px; "
+                "border-radius: 6px; border: 2px solid #7c3aed; letter-spacing: 2px; "
+                "font-size: 16pt; font-weight: bold;"
+            )
+            
+            print(f"✅ License plate extracted: {plate_text} (Confidence: {conf:.2%})")
+            
+            # Now perform auto check-in or check-out based on gate
+            gate = self.pending_card_data['gate']
+            
+            # Show confirmation dialog before proceeding
+            if gate == "ENTRY":
+                self.status_label.setText(f"Status: Waiting for confirmation...")
+                QTimer.singleShot(300, self._show_checkin_confirmation)
+            elif gate == "EXIT":
+                self.status_label.setText(f"Status: Waiting for confirmation...")
+                QTimer.singleShot(300, self._show_checkout_confirmation)
+            else:
+                self.status_label.setText(f"Status: Unknown gate type: {gate}")
+                self.is_processing_card = False
+        
+        except Exception as e:
+            self.status_label.setText(f"Status: Capture error - {str(e)}")
+            print(f"❌ Capture error: {e}")
+            self.is_processing_card = False
+    
+    def _show_checkin_confirmation(self):
+        """Show confirmation dialog for check-in from RFID card"""
+        if not self.pending_card_data or not self.captured_license_plate:
+            self.is_processing_card = False
+            return
+        
+        card_id = self.pending_card_data['card_id']
+        slot = self.pending_card_data['slot']
+        plate = self.captured_license_plate
+        
+        # Create detailed confirmation message
+        msg_text = (
+            f"<b>✓ LICENSE PLATE DETECTED</b><br><br>"
+            f"<b>Card ID:</b> {card_id}<br>"
+            f"<b>License Plate:</b> {plate}<br>"
+            f"<b>Parking Slot:</b> {slot}<br>"
+            f"<b>Time:</b> {datetime.now().strftime('%H:%M:%S')}<br><br>"
+            f"<b>Do you want to CHECK IN this vehicle?</b>"
+        )
+        
+        # Show confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "🚗 CHECK IN CONFIRMATION",
+            msg_text,
+            QMessageBox.Ok | QMessageBox.Cancel,
+            QMessageBox.Ok
+        )
+        
+        if reply == QMessageBox.Ok:
+            # Proceed with check-in
+            QTimer.singleShot(100, self._auto_check_in)
+        else:
+            # User cancelled
+            self.status_label.setText("Status: Check-in cancelled by user")
+            print(f"⚠️  Check-in cancelled for card {card_id}")
+            self.pending_card_data = None
+            self.is_processing_card = False
+    
+    def _show_checkout_confirmation(self):
+        """Show confirmation dialog for check-out from RFID card"""
+        if not self.pending_card_data or not self.captured_license_plate:
+            self.is_processing_card = False
+            return
+        
+        card_id = self.pending_card_data['card_id']
+        plate = self.captured_license_plate
+        
+        # Find the record to show duration
+        record = None
+        for r in self.parking_records:
+            if r['license_plate'] == plate and r['status'] == 'IN':
+                record = r
+                break
+        
+        duration_str = ""
+        if record:
+            time_in = record['time_in']
+            time_out = datetime.now()
+            duration = time_out - time_in
+            hours = duration.total_seconds() / 3600
+            duration_str = f"<b>Duration:</b> {hours:.2f} hours<br>"
+        
+        # Create detailed confirmation message
+        msg_text = (
+            f"<b>✓ LICENSE PLATE DETECTED</b><br><br>"
+            f"<b>Card ID:</b> {card_id}<br>"
+            f"<b>License Plate:</b> {plate}<br>"
+            f"{duration_str}"
+            f"<b>Time:</b> {datetime.now().strftime('%H:%M:%S')}<br><br>"
+            f"<b>Do you want to CHECK OUT this vehicle?</b>"
+        )
+        
+        # Show confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "🚪 CHECK OUT CONFIRMATION",
+            msg_text,
+            QMessageBox.Ok | QMessageBox.Cancel,
+            QMessageBox.Ok
+        )
+        
+        if reply == QMessageBox.Ok:
+            # Proceed with check-out
+            QTimer.singleShot(100, self._auto_check_out)
+        else:
+            # User cancelled
+            self.status_label.setText("Status: Check-out cancelled by user")
+            print(f"⚠️  Check-out cancelled for card {card_id}")
+            self.pending_card_data = None
+            self.is_processing_card = False
+    
+    def _auto_check_in(self):
+        """Auto check-in after successful license plate extraction"""
+        try:
+            if not self.pending_card_data:
+                self.is_processing_card = False
+                return
+            
+            card_id = self.pending_card_data['card_id']
+            slot = self.pending_card_data['slot']
+            
+            if not card_id or not slot:
+                self.status_label.setText("Status: Missing card ID or slot for check-in")
+                self.is_processing_card = False
+                return
+            
+            # Check if already checked in
+            for record in self.parking_records:
+                if record['card_id'] == card_id and record['status'] == 'IN':
+                    self.status_label.setText(f"Status: {card_id} already checked in at slot {record['slot']}")
+                    print(f"⚠️  Card {card_id} already checked in")
+                    self.is_processing_card = False
+                    return
+            
+            now = datetime.now()
+            
+            # Create new parking record
+            record = {
+                'card_id': card_id,
+                'license_plate': self.captured_license_plate,  # Use extracted plate
+                'time_in': now,
+                'time_out': None,
+                'slot': slot,
+                'status': 'IN',
+                'fee': 0
+            }
+            
+            self.parking_records.append(record)
+            self._save_to_csv(record)
+            self.update_table()
+            
+            msg = f"✅ CHECK IN SUCCESSFUL\n\nCard ID: {card_id}\nLicense Plate: {self.captured_license_plate}\nSlot: {slot}"
+            print(f"\n✅ AUTO CHECK-IN: {card_id} | Plate: {self.captured_license_plate} | Slot: {slot} | Time: {now.strftime('%H:%M:%S')}")
+            self.status_label.setText(f"Status: ✓ {card_id} checked in successfully")
+            
+            # Clear temporary data
+            self.pending_card_data = None
+            self.is_processing_card = False
+            
+        except Exception as e:
+            self.status_label.setText(f"Status: Auto check-in error - {str(e)}")
+            print(f"❌ Auto check-in error: {e}")
+            self.is_processing_card = False
+    
+    def _auto_check_out(self):
+        """Auto check-out after successful license plate extraction"""
+        try:
+            if not self.pending_card_data or not self.captured_license_plate:
+                self.is_processing_card = False
+                return
+            
+            license_plate = self.captured_license_plate.upper()
+            card_id = self.pending_card_data['card_id']
+            
+            # Find existing record
+            record = None
+            for r in self.parking_records:
+                if r['license_plate'] == license_plate:
+                    record = r
+                    break
+            
+            if not record:
+                self.status_label.setText(f"Status: No vehicle with plate {license_plate} found")
+                print(f"❌ License plate {license_plate} not found in records")
+                self.is_processing_card = False
+                return
+            
+            # Check if already checked out
+            if record['status'] == 'OUT':
+                self.status_label.setText(f"Status: Vehicle {license_plate} already checked out")
+                self.is_processing_card = False
+                return
+            
+            # Calculate parking fee
+            time_in = record['time_in']
+            time_out = datetime.now()
+            duration = time_out - time_in
+            hours = duration.total_seconds() / 3600
+            
+            # Fee calculation: < 2h = 20000 VND, +10000 per extra hour
+            if hours <= 2:
+                fee = 20000
+            else:
+                fee = 20000 + int((hours - 2) * 10000)
+            
+            # Update record with checkout info
+            record['time_out'] = time_out
+            record['status'] = 'OUT'
+            record['fee'] = fee
+            
+            self._save_to_csv(record)
+            self.update_table()
+            
+            self.fee_label.setText(f"💰 PARKING FEE\n{fee:,} VND")
+            
+            print(f"\n✅ AUTO CHECK-OUT: {license_plate} | Card: {card_id} | Slot: {record['slot']} | Fee: {fee:,} VND | Duration: {hours:.2f}h")
+            self.status_label.setText(f"Status: ✓ {license_plate} checked out | Fee: {fee:,} VND")
+            
+            # Clear temporary data
+            self.pending_card_data = None
+            self.is_processing_card = False
+            
+        except Exception as e:
+            self.status_label.setText(f"Status: Auto check-out error - {str(e)}")
+            print(f"❌ Auto check-out error: {e}")
+            self.is_processing_card = False
+    
     def on_frame_received(self, frame):
-        """Display camera frame"""
+        """Display incoming camera frame in UI"""
         self.current_frame = frame
         try:
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -563,12 +1248,12 @@ class ParkingManagementUI(QMainWindow):
             print(f"Frame display error: {e}")
     
     def on_camera_error(self, msg):
-        """Handle camera errors"""
-        print(f"Camera Error: {msg}")
-        self.status_label.setText(f"Status: Error - {msg}")
+        """Handle and display camera errors to user"""
+        print(f"❌ Camera Error: {msg}")
+        self.status_label.setText(f"Status: Camera Error - {msg}")
     
     def capture_plate(self):
-        """Capture current frame and extract license plate"""
+        """Manually capture current frame and extract license plate via YOLO + OCR"""
         if self.current_frame is None:
             QMessageBox.warning(self, "Error", "No frame to capture")
             return
@@ -659,7 +1344,7 @@ class ParkingManagementUI(QMainWindow):
             traceback.print_exc()
     
     def check_in(self):
-        """Check-in vehicle"""
+        """Manual check-in: Record vehicle entry with card ID, slot, and captured license plate"""
         card_id = self.card_id_input.text().strip()
         slot = self.slot_input.text().strip()
         
@@ -671,7 +1356,7 @@ class ParkingManagementUI(QMainWindow):
             QMessageBox.warning(self, "Error", "Please capture license plate first")
             return
         
-        # Check if already in
+        # Check if vehicle already checked in
         for record in self.parking_records:
             if record['card_id'] == card_id and record['status'] == 'IN':
                 QMessageBox.warning(self, "Error", f"Vehicle already checked in at slot {record['slot']}")
@@ -679,10 +1364,34 @@ class ParkingManagementUI(QMainWindow):
         
         now = datetime.now()
         
-        # Add record with captured license plate
+        # Show confirmation dialog
+        msg_text = (
+            f"<b>✓ CONFIRM CHECK IN</b><br><br>"
+            f"<b>Card ID:</b> {card_id}<br>"
+            f"<b>License Plate:</b> {self.captured_license_plate}<br>"
+            f"<b>Parking Slot:</b> {slot}<br>"
+            f"<b>Time:</b> {now.strftime('%H:%M:%S')}<br><br>"
+            f"<b>Do you want to proceed?</b>"
+        )
+        
+        # Show confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "🚗 CHECK IN CONFIRMATION",
+            msg_text,
+            QMessageBox.Ok | QMessageBox.Cancel,
+            QMessageBox.Ok
+        )
+        
+        if reply != QMessageBox.Ok:
+            self.status_label.setText("Status: Check-in cancelled by user")
+            print(f"⚠️  Check-in cancelled for card {card_id}")
+            return
+        
+        # Create new parking record with captured license plate
         record = {
             'card_id': card_id,
-            'license_plate': self.captured_license_plate,  # Use captured license plate
+            'license_plate': self.captured_license_plate,  # Use extracted license plate from OCR
             'time_in': now,
             'time_out': None,
             'slot': slot,
@@ -692,33 +1401,33 @@ class ParkingManagementUI(QMainWindow):
         
         self.parking_records.append(record)
         
-        # Save to CSV
+        # Save record to CSV
         self._save_to_csv(record)
         
-        # Update table
+        # Refresh table display
         self.update_table()
         
-        # Message
+        # Show success message
         msg = f"✅ Check-in Successful\n\nCard ID: {card_id}\nLicense Plate: {self.captured_license_plate}\nSlot: {slot}\nTime: {now.strftime('%H:%M:%S')}"
         QMessageBox.information(self, "Check-in Success", msg)
         
         self.status_label.setText(f"Status: Checked in - Card {card_id}, Plate {self.captured_license_plate}")
         
-        # Reset inputs but keep license plate for reference
+        # Clear input fields for next transaction
         self.card_id_input.clear()
         self.slot_input.clear()
         
-        print(f"\n✅ CHECK IN - Card: {card_id}, Slot: {slot}, Time: {now.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"\n✅ CHECK IN - Card: {card_id}, Slot: {slot}, Plate: {self.captured_license_plate}, Time: {now.strftime('%Y-%m-%d %H:%M:%S')}")
     
     def check_out(self):
-        """Check-out vehicle"""
+        """Manual check-out: Record vehicle exit, calculate fee, and update status"""
         license_plate = self.checkout_plate_input.text().strip().upper()
         
         if not license_plate:
             QMessageBox.warning(self, "Error", "Please enter License Plate")
             return
         
-        # Find record
+        # Search for vehicle record by license plate
         record = None
         for r in self.parking_records:
             if r['license_plate'] == license_plate:
@@ -731,68 +1440,143 @@ class ParkingManagementUI(QMainWindow):
             print(f"❌ License plate not found: {license_plate}")
             return
         
-        # Check status
+        # Check if already checked out
         if record['status'] == 'OUT':
             QMessageBox.warning(self, "Error", "Vehicle already checked out")
             return
         
-        # Calculate fee
+        # Calculate parking duration and fee
         time_in = record['time_in']
         time_out = datetime.now()
         duration = time_out - time_in
         hours = duration.total_seconds() / 3600
         
+        # Fee structure: < 2 hours = 20000 VND, +10000 VND per additional hour
         if hours <= 2:
             fee = 20000
         else:
             fee = 20000 + int((hours - 2) * 10000)
         
-        # Update record
+        # Show confirmation dialog
+        msg_text = (
+            f"<b>✓ CONFIRM CHECK OUT</b><br><br>"
+            f"<b>License Plate:</b> {license_plate}<br>"
+            f"<b>Parking Slot:</b> {record['slot']}<br>"
+            f"<b>Parking Duration:</b> {hours:.2f} hours<br>"
+            f"<b>Parking Fee:</b> {fee:,} VND<br>"
+            f"<b>Time:</b> {time_out.strftime('%H:%M:%S')}<br><br>"
+            f"<b>Do you want to proceed?</b>"
+        )
+        
+        # Show confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "🚪 CHECK OUT CONFIRMATION",
+            msg_text,
+            QMessageBox.Ok | QMessageBox.Cancel,
+            QMessageBox.Ok
+        )
+        
+        if reply != QMessageBox.Ok:
+            self.status_label.setText("Status: Check-out cancelled by user")
+            print(f"⚠️  Check-out cancelled for plate {license_plate}")
+            return
+        
+        # Update record with checkout information
         record['time_out'] = time_out
         record['status'] = 'OUT'
         record['fee'] = fee
         
-        # Update CSV
+        # Save to CSV file
         self._save_to_csv(record)
         
-        # Update table
+        # Refresh table display
         self.update_table()
         
-        # Message
+        # Show success message
         msg = f"✅ Check-out Successful\n\nLicense Plate: {license_plate}\nSlot: {record['slot']}\nFee: {fee:,} VND\nDuration: {hours:.2f} hours"
         QMessageBox.information(self, "Check-out Success", msg)
         
-        slot_msg = f"The vehicle is currently in parking slot number {record['slot']}."
-        self.status_label.setText(f"Status: {slot_msg} Fee: {fee:,} VND")
-        self.fee_label.setText(f"Fee: {fee:,} VND")
+        # Update status and fee display
+        self.status_label.setText(f"Status: Vehicle {license_plate} checked out | Parking slot: {record['slot']}")
+        self.fee_label.setText(f"💰 PARKING FEE\n{fee:,} VND")
         self.checkout_plate_input.clear()
         
         print(f"\n✅ CHECK OUT - Plate: {license_plate}, Slot: {record['slot']}, Fee: {fee:,} VND")
     
+    def update_slot_status(self):
+        """Update parking slot display based on current records"""
+        # Clear all slots (set to empty/green)
+        for slot_info in self.slot_buttons:
+            slot_num = slot_info['slot_num']
+            slot_info['is_occupied'] = False
+            slot_info['button'].setStyleSheet(
+                "QPushButton {"
+                "  background-color: #10b981;"
+                "  color: white;"
+                "  font-weight: bold;"
+                "  border-radius: 6px;"
+                "  border: 2px solid #059669;"
+                "  padding: 6px;"
+                "}"
+                "QPushButton:hover {"
+                "  background-color: #059669;"
+                "}"
+            )
+        
+        # Mark occupied slots (red) for vehicles currently parked
+        for record in self.parking_records:
+            if record['status'] == 'IN':  # Vehicle is currently parked
+                slot_num = int(record['slot'])
+                if 1 <= slot_num <= 12:
+                    for slot_info in self.slot_buttons:
+                        if slot_info['slot_num'] == slot_num:
+                            slot_info['is_occupied'] = True
+                            slot_info['button'].setStyleSheet(
+                                "QPushButton {"
+                                "  background-color: #ef4444;"
+                                "  color: white;"
+                                "  font-weight: bold;"
+                                "  border-radius: 6px;"
+                                "  border: 2px solid #dc2626;"
+                                "  padding: 6px;"
+                                "}"
+                                "QPushButton:hover {"
+                                "  background-color: #dc2626;"
+                                "}"
+                            )
+                            break
+    
     def update_table(self):
-        """Update records table"""
+        """Refresh parking records table with current data"""
         self.table.setRowCount(0)
         
         for i, record in enumerate(self.parking_records):
             self.table.insertRow(i)
             
+            # Populate table cells
             self.table.setItem(i, 0, QTableWidgetItem(record['card_id']))
             self.table.setItem(i, 1, QTableWidgetItem(record['license_plate']))
             self.table.setItem(i, 2, QTableWidgetItem(record['time_in'].strftime("%H:%M:%S") if record['time_in'] else ""))
             self.table.setItem(i, 3, QTableWidgetItem(record['time_out'].strftime("%H:%M:%S") if record['time_out'] else ""))
             self.table.setItem(i, 4, QTableWidgetItem(record['slot']))
             
+            # Color-code status column
             status_item = QTableWidgetItem(record['status'])
             if record['status'] == 'IN':
-                status_item.setBackground(QColor("#d4edda"))
+                status_item.setBackground(QColor("#d4edda"))  # Green for entry
             else:
-                status_item.setBackground(QColor("#f8d7da"))
+                status_item.setBackground(QColor("#f8d7da"))  # Red for exit
             self.table.setItem(i, 5, status_item)
             
+            # Display fee if checkout occurred
             self.table.setItem(i, 6, QTableWidgetItem(str(record['fee']) if record['fee'] > 0 else ""))
+        
+        # Update parking slots display based on current records
+        self.update_slot_status()
     
     def _save_to_csv(self, record):
-        """Save record to CSV"""
+        """Append parking record to CSV file"""
         try:
             with open(self.csv_file, 'a', newline='', encoding='utf-8') as f:
                 writer = csv.writer(f)
@@ -806,10 +1590,10 @@ class ParkingManagementUI(QMainWindow):
                     record['fee'] if record['fee'] > 0 else ""
                 ])
         except Exception as e:
-            print(f"Error saving to CSV: {e}")
+            print(f"❌ Error saving to CSV: {e}")
     
     def export_to_excel(self):
-        """Export records to Excel"""
+        """Export all parking records to Excel file with formatting"""
         try:
             import openpyxl
             from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -898,7 +1682,7 @@ class ParkingManagementUI(QMainWindow):
                             cell.fill = PatternFill(start_color="f8d7da", end_color="f8d7da", fill_type="solid")
                             cell.font = Font(bold=True, color="721c24")
             
-            # Set column widths
+            # Set column widths for better readability
             ws.column_dimensions['A'].width = 15
             ws.column_dimensions['B'].width = 20
             ws.column_dimensions['C'].width = 22
@@ -907,17 +1691,18 @@ class ParkingManagementUI(QMainWindow):
             ws.column_dimensions['F'].width = 12
             ws.column_dimensions['G'].width = 18
             
-            # Freeze header row
+            # Freeze header row for easier scrolling
             ws.freeze_panes = 'A6'
             
-            # Save workbook
+            # Save the workbook to file
             wb.save(file_path)
             
-            # Show success message
+            # Calculate summary statistics
             total_in = sum(1 for r in self.parking_records if r['status'] == 'IN')
             total_out = sum(1 for r in self.parking_records if r['status'] == 'OUT')
             total_fee = sum(r['fee'] for r in self.parking_records if r['fee'] > 0)
             
+            # Show success message
             success_msg = (
                 f"✅ Excel file saved successfully!\n\n"
                 f"File: {file_path}\n"
@@ -948,14 +1733,21 @@ class ParkingManagementUI(QMainWindow):
             traceback.print_exc()
     
     def closeEvent(self, event):
-        """Cleanup on exit"""
+        """Clean up resources when application exits"""
+        # Stop serial port thread
+        if self.serial_thread:
+            self.serial_thread.stop()
+            self.serial_thread.join(timeout=2)
+        
+        # Stop camera thread
         if self.camera_thread:
             self.camera_thread.stop()
+        
         event.accept()
 
 
 def main():
-    """Main application entry point"""
+    """Main application entry point - Initialize PyQt5 application and show UI"""
     print("=" * 70)
     print("🅿️  PARKING MANAGEMENT SYSTEM")
     print("=" * 70)
@@ -965,12 +1757,14 @@ def main():
     app.setStyle('Fusion')
     
     try:
+        # Create and display main window
         window = ParkingManagementUI()
         window.show()
         
         print("✓ Window displayed")
         print("✓ Application ready\n")
         
+        # Start Qt event loop
         sys.exit(app.exec_())
     
     except Exception as e:

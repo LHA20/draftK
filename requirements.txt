@@ -21,8 +21,15 @@ easyocr==1.6.2
 # Excel Export
 openpyxl==3.1.5
 
+# Serial Port Communication (Arduino/ESP32)
+pyserial==3.5
+
 # Data Processing (for CSV, comes with Python)
 # csv module is built-in
 
 # Threading support (comes with Python)
 # threading module is built-in
+
+# JSON support (comes with Python)
+# json module is built-in
+
