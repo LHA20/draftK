@@ -248,7 +248,7 @@ class SettingsDialog(QDialog):
     
     def __init__(self, parent, current_port=None, current_baud='9600'):
         super().__init__(parent)
-        self.setWindowTitle("Serial Port Settings")
+        self.setWindowTitle("Cài Đặt Cổng Serial")
         self.setGeometry(200, 200, 500, 300)
         self.setStyleSheet(self.get_material_style())
         
@@ -309,14 +309,14 @@ class SettingsDialog(QDialog):
         layout.setContentsMargins(24, 24, 24, 24)
         
         # Title
-        title = QLabel("Serial Port Configuration")
+        title = QLabel("Cấu Hình Cổng Serial")
         title.setFont(QFont("Arial", 14, QFont.Bold))
         title.setStyleSheet("color: #1976D2;")
         layout.addWidget(title)
         
         # Port selection
         port_layout = QHBoxLayout()
-        port_label = QLabel("Serial Port:")
+        port_label = QLabel("Cổng Serial:")
         port_label.setMinimumWidth(120)
         port_label.setFont(QFont("Arial", 10, QFont.Bold))
         port_layout.addWidget(port_label)
@@ -328,7 +328,7 @@ class SettingsDialog(QDialog):
             for port_name, port_desc in ports:
                 self.port_combo.addItem(f"{port_name} - {port_desc}", port_name)
         else:
-            self.port_combo.addItem("No ports found", None)
+            self.port_combo.addItem("Không tìm thấy cổng", None)
         
         if self.current_port:
             idx = self.port_combo.findData(self.current_port)
@@ -340,7 +340,7 @@ class SettingsDialog(QDialog):
         
         # Baud rate selection
         baud_layout = QHBoxLayout()
-        baud_label = QLabel("Baud Rate:")
+        baud_label = QLabel("Tốc Độ Baud:")
         baud_label.setMinimumWidth(120)
         baud_label.setFont(QFont("Arial", 10, QFont.Bold))
         baud_layout.addWidget(baud_label)
@@ -361,7 +361,7 @@ class SettingsDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(12)
         
-        cancel_btn = QPushButton("Cancel")
+        cancel_btn = QPushButton("Hủy")
         cancel_btn.setObjectName("CancelButton")
         cancel_btn.setMinimumHeight(36)
         cancel_btn.setMaximumWidth(100)
@@ -392,7 +392,7 @@ class CheckInConfirmationDialog(QDialog):
     
     def __init__(self, parent, card_id, license_plate, slot, time_str):
         super().__init__(parent)
-        self.setWindowTitle("🚗 CHECK IN CONFIRMATION")
+        self.setWindowTitle("XÁC NHẬN GỬI XE")
         self.setGeometry(200, 200, 600, 400)
         self.setStyleSheet("background-color: #f5f5f5;")
         self.user_confirmed = False
@@ -407,7 +407,7 @@ class CheckInConfirmationDialog(QDialog):
         
         # Title with icon
         title_layout = QHBoxLayout()
-        title = QLabel("✓ LICENSE PLATE DETECTED")
+        title = QLabel("PHÁT HIỆN BIỂN SỐ")
         title.setFont(QFont("Arial", 16, QFont.Bold))
         title.setStyleSheet("color: #2e7d32;")
         title_layout.addWidget(title)
@@ -428,7 +428,7 @@ class CheckInConfirmationDialog(QDialog):
         
         # Card ID
         card_layout = QHBoxLayout()
-        card_label = QLabel("Card ID:")
+        card_label = QLabel("ID Thẻ:")
         card_label.setFont(QFont("Arial", 12, QFont.Bold))
         card_label.setMinimumWidth(120)
         card_label.setStyleSheet("color: #212121;")
@@ -442,7 +442,7 @@ class CheckInConfirmationDialog(QDialog):
         
         # License Plate
         plate_layout = QHBoxLayout()
-        plate_label = QLabel("License Plate:")
+        plate_label = QLabel("Biển Số Xe:")
         plate_label.setFont(QFont("Arial", 12, QFont.Bold))
         plate_label.setMinimumWidth(120)
         plate_label.setStyleSheet("color: #212121;")
@@ -456,7 +456,7 @@ class CheckInConfirmationDialog(QDialog):
         
         # Parking Slot
         slot_layout = QHBoxLayout()
-        slot_label = QLabel("Parking Slot:")
+        slot_label = QLabel("Vị Trí:")
         slot_label.setFont(QFont("Arial", 12, QFont.Bold))
         slot_label.setMinimumWidth(120)
         slot_label.setStyleSheet("color: #212121;")
@@ -470,7 +470,7 @@ class CheckInConfirmationDialog(QDialog):
         
         # Time
         time_layout = QHBoxLayout()
-        time_label = QLabel("Time:")
+        time_label = QLabel("Thời Gian:")
         time_label.setFont(QFont("Arial", 12, QFont.Bold))
         time_label.setMinimumWidth(120)
         time_label.setStyleSheet("color: #212121;")
@@ -486,7 +486,7 @@ class CheckInConfirmationDialog(QDialog):
         layout.addWidget(details_widget, 1)
         
         # Question
-        question = QLabel("Do you want to proceed with CHECK IN?")
+        question = QLabel("Kiểm tra thông tin gửi xe?")
         question.setFont(QFont("Arial", 12, QFont.Bold))
         question.setStyleSheet("color: #1565c0;")
         question.setAlignment(Qt.AlignCenter)
@@ -496,7 +496,7 @@ class CheckInConfirmationDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(16)
         
-        cancel_btn = QPushButton("✕ CANCEL")
+        cancel_btn = QPushButton("HỦY")
         cancel_btn.setFont(QFont("Arial", 11, QFont.Bold))
         cancel_btn.setMinimumHeight(44)
         cancel_btn.setMinimumWidth(140)
@@ -509,7 +509,7 @@ class CheckInConfirmationDialog(QDialog):
         
         button_layout.addStretch()
         
-        ok_btn = QPushButton("✓ CONFIRM CHECK IN")
+        ok_btn = QPushButton("XÁC NHẬN")
         ok_btn.setFont(QFont("Arial", 11, QFont.Bold))
         ok_btn.setMinimumHeight(44)
         ok_btn.setMinimumWidth(200)
@@ -530,7 +530,7 @@ class CheckOutConfirmationDialog(QDialog):
     
     def __init__(self, parent, license_plate, slot, duration, fee, time_str):
         super().__init__(parent)
-        self.setWindowTitle("🚪 CHECK OUT CONFIRMATION")
+        self.setWindowTitle("XÁC NHẬN lẤY XE")
         self.setGeometry(200, 200, 600, 480)
         self.setStyleSheet("background-color: #f5f5f5;")
         self.user_confirmed = False
@@ -545,7 +545,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         # Title with icon
         title_layout = QHBoxLayout()
-        title = QLabel("✓ READY FOR CHECK OUT")
+        title = QLabel("SẴN SÀNG LẤY XE")
         title.setFont(QFont("Arial", 16, QFont.Bold))
         title.setStyleSheet("color: #c62828;")
         title_layout.addWidget(title)
@@ -566,7 +566,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         # License Plate
         plate_layout = QHBoxLayout()
-        plate_label = QLabel("License Plate:")
+        plate_label = QLabel("Biển Số Xe:")
         plate_label.setFont(QFont("Arial", 12, QFont.Bold))
         plate_label.setMinimumWidth(140)
         plate_label.setStyleSheet("color: #212121;")
@@ -580,7 +580,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         # Parking Slot
         slot_layout = QHBoxLayout()
-        slot_label = QLabel("Parking Slot:")
+        slot_label = QLabel("Vị Trí:")
         slot_label.setFont(QFont("Arial", 12, QFont.Bold))
         slot_label.setMinimumWidth(140)
         slot_label.setStyleSheet("color: #212121;")
@@ -594,11 +594,11 @@ class CheckOutConfirmationDialog(QDialog):
         
         # Duration
         duration_layout = QHBoxLayout()
-        duration_label = QLabel("Duration:")
+        duration_label = QLabel("Thời Lượng:")
         duration_label.setFont(QFont("Arial", 12, QFont.Bold))
         duration_label.setMinimumWidth(140)
         duration_label.setStyleSheet("color: #212121;")
-        duration_value = QLabel(f"{duration:.2f} hours")
+        duration_value = QLabel(f"{duration:.2f} giờ")
         duration_value.setFont(QFont("Courier New", 12, QFont.Bold))
         duration_value.setStyleSheet("color: #f57f17; background-color: #fff3e0; padding: 8px 12px; border-radius: 4px;")
         duration_layout.addWidget(duration_label)
@@ -608,7 +608,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         # Fee (highlighted in green)
         fee_layout = QHBoxLayout()
-        fee_label = QLabel("Parking Fee:")
+        fee_label = QLabel("Phí Đỗ Xe:")
         fee_label.setFont(QFont("Arial", 12, QFont.Bold))
         fee_label.setMinimumWidth(140)
         fee_label.setStyleSheet("color: #212121;")
@@ -622,7 +622,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         # Time
         time_layout = QHBoxLayout()
-        time_label = QLabel("Time:")
+        time_label = QLabel("Thời Gian:")
         time_label.setFont(QFont("Arial", 12, QFont.Bold))
         time_label.setMinimumWidth(140)
         time_label.setStyleSheet("color: #212121;")
@@ -638,7 +638,7 @@ class CheckOutConfirmationDialog(QDialog):
         layout.addWidget(details_widget, 1)
         
         # Question
-        question = QLabel("Do you want to proceed with CHECK OUT?")
+        question = QLabel("Kiểm tra thông tin lấy xe")
         question.setFont(QFont("Arial", 12, QFont.Bold))
         question.setStyleSheet("color: #c62828;")
         question.setAlignment(Qt.AlignCenter)
@@ -648,7 +648,7 @@ class CheckOutConfirmationDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(16)
         
-        cancel_btn = QPushButton("✕ CANCEL")
+        cancel_btn = QPushButton("HỦY")
         cancel_btn.setFont(QFont("Arial", 11, QFont.Bold))
         cancel_btn.setMinimumHeight(44)
         cancel_btn.setMinimumWidth(140)
@@ -661,7 +661,7 @@ class CheckOutConfirmationDialog(QDialog):
         
         button_layout.addStretch()
         
-        ok_btn = QPushButton("✓ CONFIRM CHECK OUT")
+        ok_btn = QPushButton("XÁC NHẬN")
         ok_btn.setFont(QFont("Arial", 11, QFont.Bold))
         ok_btn.setMinimumHeight(44)
         ok_btn.setMinimumWidth(200)
@@ -682,7 +682,7 @@ class ParkingManagementUI(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("🅿️ Parking Management System")
+        self.setWindowTitle("Hệ Thống Quản Lý Trạm Đỗ Xe")
         self.setGeometry(50, 50, 1920, 1080)
         
         # Color scheme for user-friendly parking management system
@@ -774,7 +774,7 @@ class ParkingManagementUI(QMainWindow):
         video_container.setStyleSheet("background-color: white;")
         
         # Video header with icon
-        video_header = QLabel("CAMERA")
+        video_header = QLabel("CAMERA TRỰC TIẾP")
         video_header.setFont(QFont("Arial", 10, QFont.Bold))
         video_header.setAlignment(Qt.AlignCenter)
         video_header.setStyleSheet(
@@ -804,7 +804,7 @@ class ParkingManagementUI(QMainWindow):
         snapshot_container.setStyleSheet("background-color: white;")
         
         # Snapshot header
-        snapshot_header = QLabel("LICENSE PLATE IMAGE")
+        snapshot_header = QLabel("HÌNH ẢNH BIỂN SỐ")
         snapshot_header.setFont(QFont("Arial", 10, QFont.Bold))
         snapshot_header.setAlignment(Qt.AlignCenter)
         snapshot_header.setStyleSheet(
@@ -822,11 +822,11 @@ class ParkingManagementUI(QMainWindow):
             "border: 2px dashed #059669; background-color: #ecfdf5; border-radius: 6px; "
             "color: #047857; font-weight: bold;"
         )
-        self.snapshot_label.setText("No snapshot captured yet\nClick 'CAPTURE LICENSE PLATE' to start")
+        self.snapshot_label.setText("Chưa có ảnh chụp\nNhấp 'CHỤP BIỂN SỐ' để bắt đầu")
         snapshot_layout.addWidget(self.snapshot_label, alignment=Qt.AlignCenter)
         
         # Extracted license plate label (Large, Bold)
-        plate_info_header = QLabel("EXTRACTED TEXT")
+        plate_info_header = QLabel("BIỂN SỐ")
         plate_info_header.setFont(QFont("Arial", 9, QFont.Bold))
         plate_info_header.setAlignment(Qt.AlignCenter)
         plate_info_header.setStyleSheet(
@@ -834,7 +834,7 @@ class ParkingManagementUI(QMainWindow):
         )
         snapshot_layout.addWidget(plate_info_header)
         
-        self.extracted_plate_label = QLabel("Awaiting capture...")
+        self.extracted_plate_label = QLabel("Đang chờ ...")
         self.extracted_plate_label.setAlignment(Qt.AlignCenter)
         self.extracted_plate_label.setFont(QFont("Courier New", 16, QFont.Bold))
         self.extracted_plate_label.setStyleSheet(
@@ -853,7 +853,7 @@ class ParkingManagementUI(QMainWindow):
         slots_container.setStyleSheet("background-color: white;")
         
         # Slots header
-        slots_header = QLabel("PARKING PALLET STATUS")
+        slots_header = QLabel("TRẠNG THÁI CÁC PALLET")
         slots_header.setFont(QFont("Arial", 10, QFont.Bold))
         slots_header.setAlignment(Qt.AlignCenter)
         slots_header.setStyleSheet(
@@ -914,7 +914,7 @@ class ParkingManagementUI(QMainWindow):
         home_btn_layout = QHBoxLayout()
         home_btn_layout.addStretch()
         
-        self.home_btn = QPushButton("🏠 HOME")
+        self.home_btn = QPushButton("HOME")
         self.home_btn.setMinimumHeight(50)
         self.home_btn.setMinimumWidth(120)
         self.home_btn.setMaximumWidth(160)
@@ -988,14 +988,14 @@ class ParkingManagementUI(QMainWindow):
         status_layout = QHBoxLayout()
         status_layout.setSpacing(12)
         
-        self.serial_status_label = QLabel("🔴 Disconnected")
+        self.serial_status_label = QLabel("Ngắt Kết Nối")
         self.serial_status_label.setFont(QFont("Arial", 10, QFont.Bold))
         self.serial_status_label.setStyleSheet("color: #d32f2f;")
         status_layout.addWidget(self.serial_status_label)
         status_layout.addStretch()
         
         self.serial_connect_btn = self._create_button(
-            "⚙️ SETTING",
+            "CÀI ĐẶT",
             self.PRIMARY_COLOR,
             self.PRIMARY_LIGHT,
             36,
@@ -1011,8 +1011,8 @@ class ParkingManagementUI(QMainWindow):
         )
         scroll_layout.addWidget(serial_section)
         
-        # ============ SECTION 1: CHECK IN (Vehicle Entry) ============
-        checkin_header = QLabel("CHECK IN")
+        # ============ SECTION 1: VÀO ĐỖ (Vehicle Entry) ============
+        checkin_header = QLabel("GỬI XE")
         checkin_header.setFont(QFont("Arial", 11, QFont.Bold))
         checkin_header.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         checkin_header.setStyleSheet(
@@ -1031,14 +1031,14 @@ class ParkingManagementUI(QMainWindow):
         row1_layout = QHBoxLayout()
         row1_layout.setSpacing(8)
         
-        card_label = QLabel("Card ID")
+        card_label = QLabel("ID Thẻ")
         card_label.setFont(QFont("Arial", 10, QFont.Bold))
         card_label.setMinimumWidth(80)
         card_label.setStyleSheet("color: #212121;")
         row1_layout.addWidget(card_label)
         
         self.card_id_input = QLineEdit()
-        self.card_id_input.setPlaceholderText("Enter card ID...")
+        self.card_id_input.setPlaceholderText("Chờ ID thẻ...")
         self.card_id_input.setMinimumHeight(36)
         self.card_id_input.setStyleSheet(
             "border: 1px solid #bdbdbd; border-radius: 4px; padding: 8px; background-color: #ffffff;"
@@ -1047,7 +1047,7 @@ class ParkingManagementUI(QMainWindow):
         row1_layout.addWidget(self.card_id_input)
         
         self.capture_btn = self._create_button(
-            "📷 CAPTURE",
+            "CHỤP BIỂN SỐ",
             self.SECONDARY_COLOR,
             "#1b7470",
             36,
@@ -1061,14 +1061,14 @@ class ParkingManagementUI(QMainWindow):
         row2_layout = QHBoxLayout()
         row2_layout.setSpacing(8)
         
-        slot_label = QLabel("Slot")
+        slot_label = QLabel("Pallet")
         slot_label.setFont(QFont("Arial", 10, QFont.Bold))
         slot_label.setMinimumWidth(80)
         slot_label.setStyleSheet("color: #212121;")
         row2_layout.addWidget(slot_label)
         
         self.slot_input = QLineEdit()
-        self.slot_input.setPlaceholderText("Enter slot number...")
+        self.slot_input.setPlaceholderText("Chờ số vị trí...")
         self.slot_input.setMinimumHeight(36)
         self.slot_input.setStyleSheet(
             "border: 1px solid #bdbdbd; border-radius: 4px; padding: 8px; background-color: #ffffff;"
@@ -1077,7 +1077,7 @@ class ParkingManagementUI(QMainWindow):
         row2_layout.addWidget(self.slot_input)
         
         self.checkin_btn = self._create_button(
-            "✅ CHECK IN",
+            "XÁC NHẬN",
             self.SUCCESS_COLOR,
             "#2e7d32",
             36,
@@ -1091,7 +1091,7 @@ class ParkingManagementUI(QMainWindow):
         time_in_layout = QHBoxLayout()
         time_in_layout.setSpacing(8)
         
-        time_in_label_text = QLabel("Time In")
+        time_in_label_text = QLabel("Giờ Vào")
         time_in_label_text.setFont(QFont("Arial", 10, QFont.Bold))
         time_in_label_text.setMinimumWidth(80)
         time_in_label_text.setStyleSheet("color: #212121;")
@@ -1114,8 +1114,8 @@ class ParkingManagementUI(QMainWindow):
         )
         scroll_layout.addWidget(checkin_section)
         
-        # ============ SECTION 2: CHECK OUT (Vehicle Exit) ============
-        checkout_header = QLabel("CHECK OUT")
+        # ============ SECTION 2: RA ĐỖ (Vehicle Exit) ============
+        checkout_header = QLabel("LẤY XE")
         checkout_header.setFont(QFont("Arial", 11, QFont.Bold))
         checkout_header.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         checkout_header.setStyleSheet(
@@ -1134,14 +1134,14 @@ class ParkingManagementUI(QMainWindow):
         plate_layout = QHBoxLayout()
         plate_layout.setSpacing(8)
         
-        plate_label = QLabel("Plate")
+        plate_label = QLabel("Biển Số")
         plate_label.setFont(QFont("Arial", 10, QFont.Bold))
         plate_label.setMinimumWidth(80)
         plate_label.setStyleSheet("color: #212121;")
         plate_layout.addWidget(plate_label)
         
         self.checkout_plate_input = QLineEdit()
-        self.checkout_plate_input.setPlaceholderText("Enter license plate...")
+        self.checkout_plate_input.setPlaceholderText("Nhập biển số xe...")
         self.checkout_plate_input.setMinimumHeight(36)
         self.checkout_plate_input.setStyleSheet(
             "border: 1px solid #bdbdbd; border-radius: 4px; padding: 8px; background-color: #ffffff;"
@@ -1150,7 +1150,7 @@ class ParkingManagementUI(QMainWindow):
         plate_layout.addWidget(self.checkout_plate_input)
         
         self.checkout_btn = self._create_button(
-            "🏁 CHECK OUT",
+            "XÁC NHẬN",
             self.DANGER_COLOR,
             "#c62828",
             36,
@@ -1164,7 +1164,7 @@ class ParkingManagementUI(QMainWindow):
         time_out_layout = QHBoxLayout()
         time_out_layout.setSpacing(8)
         
-        time_out_label_text = QLabel("Time Out")
+        time_out_label_text = QLabel("Giờ Ra")
         time_out_label_text.setFont(QFont("Arial", 10, QFont.Bold))
         time_out_label_text.setMinimumWidth(80)
         time_out_label_text.setStyleSheet("color: #212121;")
@@ -1187,8 +1187,8 @@ class ParkingManagementUI(QMainWindow):
         )
         scroll_layout.addWidget(checkout_section)
         
-        # ============ SECTION 3: PARKING RECORDS TABLE ============
-        table_header = QLabel("PARKING RECORDS & HISTORY")
+        # ============ SECTION 3: LỊCH SỬ VÀ HỒ SƠ ĐỖ XE ============
+        table_header = QLabel("QUẢN LÝ DỮ LIỆU HỆ THỐNG")
         table_header.setFont(QFont("Arial", 11, QFont.Bold))
         table_header.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         table_header.setStyleSheet(
@@ -1201,7 +1201,7 @@ class ParkingManagementUI(QMainWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(7)
         self.table.setHorizontalHeaderLabels([
-            'Card ID', 'License Plate', 'Time In', 'Time Out', 'Slot', 'Status', 'Fee (VND)'
+            'ID Thẻ', 'Biển Số Xe', 'Giờ Vào', 'Giờ Ra', 'Vị Trí', 'Trạng Thái', 'Phí (VND)'
         ])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.setRowCount(0)
@@ -1233,7 +1233,7 @@ class ParkingManagementUI(QMainWindow):
         download_layout.addStretch()  # Add space on left
         
         self.download_btn = self._create_button(
-            "📥 REPORT",
+            "BÁO CÁO",
             self.SUCCESS_COLOR,
             "#38764d",
             44,
@@ -1306,7 +1306,7 @@ class ParkingManagementUI(QMainWindow):
             for port_name, port_desc in ports:
                 self.port_combo.addItem(f"{port_name} - {port_desc}", port_name)
         else:
-            self.port_combo.addItem("No ports found", None)
+            self.port_combo.addItem("Không tìm thấy cổng", None)
     
     def toggle_serial_connection(self):
         """Toggle serial port connection - Connect or disconnect from Arduino/ESP32"""
@@ -1428,7 +1428,7 @@ class ParkingManagementUI(QMainWindow):
             
             # Validate card data
             if not card_id:
-                self._update_status("Status: Invalid card ID received")
+                self._update_status("Trạng Thái: ID Thẻ không hợp lệ")
                 self.is_processing_card = False
                 return
             
@@ -1445,7 +1445,7 @@ class ParkingManagementUI(QMainWindow):
                 self.slot_input.setText(self.pending_card_data['slot'])
             
             # Update status to show card received
-            self._update_status(f"Status: Card scanned ({card_id}) - {gate} | Capturing license plate...")
+            self._update_status(f"Trạng Thái: Thẻ quét ({card_id}) - {gate} | Chụp biển số xe...")
             print(f"\n📱 Card event received: ID={card_id}, Gate={gate}, Slot={slot}")
             
             # Trigger license plate capture after small delay
@@ -1459,14 +1459,14 @@ class ParkingManagementUI(QMainWindow):
     def _process_card_capture(self):
         """Capture license plate for the pending card scan"""
         if not self.pending_card_data or self.current_frame is None:
-            self._update_status("Status: No frame available for capture")
+            self._update_status("Trạng Thái: Không có khung hình để chụp")
             self.is_processing_card = False
             return
         
         try:
             # Check if YOLO model is loaded
             if not self.camera_thread.license_plate_detector:
-                self._update_status("Status: YOLO model not ready")
+                self._update_status("Trạng Thái: Mô hình YOLO chưa sẵn sàng")
                 self.is_processing_card = False
                 return
             
@@ -1474,7 +1474,7 @@ class ParkingManagementUI(QMainWindow):
             detections = self.camera_thread.license_plate_detector(self.current_frame)[0]
             
             if len(detections.boxes) == 0:
-                self._update_status(f"Status: No license plate detected for {self.pending_card_data['card_id']}")
+                self._update_status(f"Trạng Thái: Không phát hiện biển số cho {self.pending_card_data['card_id']}")
                 print(f"⚠️  No plate detected for card {self.pending_card_data['card_id']}")
                 self.is_processing_card = False
                 return
@@ -1546,13 +1546,13 @@ class ParkingManagementUI(QMainWindow):
             
             # Show confirmation dialog before proceeding
             if gate == "ENTRY":
-                self._update_status(f"Status: Waiting for confirmation...")
+                self._update_status(f"Trạng Thái: Chờ xác nhận...")
                 QTimer.singleShot(300, self._show_checkin_confirmation)
             elif gate == "EXIT":
-                self._update_status(f"Status: Waiting for confirmation...")
+                self._update_status(f"Trạng Thái: Chờ xác nhận...")
                 QTimer.singleShot(300, self._show_checkout_confirmation)
             else:
-                self._update_status(f"Status: Unknown gate type: {gate}")
+                self._update_status(f"Trạng Thái: Loại cổng không xác định: {gate}")
                 self.is_processing_card = False
         
         except Exception as e:
@@ -1579,8 +1579,8 @@ class ParkingManagementUI(QMainWindow):
             QTimer.singleShot(100, self._auto_check_in)
         else:
             # User cancelled
-            self._update_status("Status: Check-in cancelled by user")
-            print(f"⚠️  Check-in cancelled for card {card_id}")
+            self._update_status("Trạng Thái: Vào đỗ bị hủy bởi người dùng")
+            print(f"⚠️  Vào đỗ bị hủy cho thẻ {card_id}")
             self.pending_card_data = None
             self.is_processing_card = False
     
@@ -1623,8 +1623,8 @@ class ParkingManagementUI(QMainWindow):
             QTimer.singleShot(100, self._auto_check_out)
         else:
             # User cancelled
-            self._update_status("Status: Check-out cancelled by user")
-            print(f"⚠️  Check-out cancelled for card {card_id}")
+            self._update_status("Trạng Thái: Ra đỗ bị hủy bởi người dùng")
+            print(f"⚠️  Ra đỗ bị hủy cho thẻ {card_id}")
             self.pending_card_data = None
             self.is_processing_card = False
     
@@ -1639,14 +1639,14 @@ class ParkingManagementUI(QMainWindow):
             slot = self.pending_card_data['slot']
             
             if not card_id or not slot:
-                self._update_status("Status: Missing card ID or slot for check-in")
+                self._update_status("Trạng Thái: Thiếu ID thẻ hoặc vị trí cho vào đỗ")
                 self.is_processing_card = False
                 return
             
             # Check if already checked in
             for record in self.parking_records:
                 if record['card_id'] == card_id and record['status'] == 'IN':
-                    self._update_status(f"Status: {card_id} already checked in at slot {record['slot']}")
+                    self._update_status(f"Trạng Thái: {card_id} đã vào đỗ tại vị trí {record['slot']}")
                     print(f"⚠️  Card {card_id} already checked in")
                     self.is_processing_card = False
                     return
@@ -1668,9 +1668,9 @@ class ParkingManagementUI(QMainWindow):
             self._save_to_csv(record)
             self.update_table()
             
-            msg = f"✅ CHECK IN SUCCESSFUL\n\nCard ID: {card_id}\nLicense Plate: {self.captured_license_plate}\nSlot: {slot}"
+            msg = f"VÀO ĐỖ THÀNH CÔNG\n\nID Thẻ: {card_id}\nBiển Số Xe: {self.captured_license_plate}\nVị Trí: {slot}"
             print(f"\n✅ AUTO CHECK-IN: {card_id} | Plate: {self.captured_license_plate} | Slot: {slot} | Time: {now.strftime('%H:%M:%S')}")
-            self._update_status(f"Status: ✓ {card_id} checked in successfully")
+            self._update_status(f"Trạng Thái: {card_id} vào đỗ thành công")
             
             # Clear temporary data
             self.pending_card_data = None
@@ -1699,14 +1699,14 @@ class ParkingManagementUI(QMainWindow):
                     break
             
             if not record:
-                self._update_status(f"Status: No vehicle with plate {license_plate} found")
+                self._update_status(f"Trạng Thái: Không tìm thấy xe với biển số {license_plate}")
                 print(f"❌ License plate {license_plate} not found in records")
                 self.is_processing_card = False
                 return
             
             # Check if already checked out
             if record['status'] == 'OUT':
-                self._update_status(f"Status: Vehicle {license_plate} already checked out")
+                self._update_status(f"Trạng Thái: Xe {license_plate} đã ra đỗ")
                 self.is_processing_card = False
                 return
             
