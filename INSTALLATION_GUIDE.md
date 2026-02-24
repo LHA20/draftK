@@ -1,20 +1,43 @@
 # 🅿️ Installation & Setup Guide - Parking Management System
 
 **Version:** 3.0  
-**Date:** January 12, 2026
+**Date:** February 24, 2026
 
 ---
 
 ## 📦 Installation Steps
+
+### Step 0: Clone repo 
+```bash
+
+git clone https://github.com/LHA20/draftK.git
+
+cd ~/draftK
+
+git submodule update --init --recursive
+
+cd
+
+```
 
 ### Step 1: Navigate to Project Directory
 ```bash
 cd ~/draftK
 ```
 
-### Step 2: Activate Virtual Environment
+### Step 2: Create and Activate Virtual Environment
 ```bash
+
+#Ubuntu/Linux:
+
+python3 -m venv venv
+
 source venv/bin/activate
+
+#Window:
+python3 -m venv venv
+
+venv\Scripts\activate
 ```
 
 You should see `(venv)` in your terminal prompt.
@@ -22,7 +45,7 @@ You should see `(venv)` in your terminal prompt.
 ### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
-pip install openpyxl
+
 ```
 
 ### Step 4: Verify Setup
@@ -75,27 +98,14 @@ You can now run:
 
 ## 🚀 Running the Application
 
-### Option 1: Direct Terminal
+### Direct Terminal
 ```bash
 cd ~/draftK
 source venv/bin/activate
 python3 main_parking.py
 ```
 
-### Option 2: Using Launch Script
-```bash
-cd ~/draftK
-./run.sh
-```
 
-### Option 3: Background Process
-```bash
-cd ~/draftK
-source venv/bin/activate
-python3 main_parking.py > /tmp/parking.log 2>&1 &
-```
-
----
 
 ## 📋 Requirements Summary
 
@@ -119,41 +129,6 @@ python3 main_parking.py > /tmp/parking.log 2>&1 &
 
 ---
 
-## 🔧 Environment Setup
-
-### First Time Setup (Complete)
-```bash
-# Navigate to project
-cd ~/draftK
-
-# Create virtual environment (if not exists)
-python3 -m venv venv
-
-# Activate it
-source venv/bin/activate
-
-# Upgrade pip
-pip install --upgrade pip
-
-# Install all dependencies
-pip install -r requirements.txt
-pip install openpyxl
-
-# Verify everything works
-python3 verify_setup.py
-
-# Run application
-python3 main_parking.py
-```
-
-### Subsequent Sessions
-```bash
-cd ~/draftK
-source venv/bin/activate
-python3 main_parking.py
-```
-
----
 
 ## 📁 Project Structure
 

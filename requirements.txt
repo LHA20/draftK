@@ -2,15 +2,15 @@
 PyQt5==5.15.9
 
 # Computer Vision & Image Processing
-opencv-python==4.8.0.74
-Pillow==10.0.0
+opencv-python==4.8.1.78
+Pillow==10.1.0
 
 # Numerical Computing
-numpy==1.24.3
+numpy==1.24.4
 
 # Deep Learning
-torch==2.9.1
-torchvision==0.16.1
+torch==2.1.2
+torchvision==0.16.2
 
 # YOLO License Plate Detection
 ultralytics==8.0.238
@@ -23,13 +23,3 @@ openpyxl==3.1.5
 
 # Serial Port Communication (Arduino/ESP32)
 pyserial==3.5
-
-# Data Processing (for CSV, comes with Python)
-# csv module is built-in
-
-# Threading support (comes with Python)
-# threading module is built-in
-
-# JSON support (comes with Python)
-# json module is built-in
-
