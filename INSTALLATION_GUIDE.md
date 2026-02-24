@@ -1,4 +1,4 @@
-# 🅿️ Installation & Setup Guide - Parking Management System
+# Installation & Setup Guide - Parking Management System
 
 **Version:** 3.0  
 **Date:** February 24, 2026
@@ -48,53 +48,27 @@ pip install -r requirements.txt
 
 ```
 
-### Step 4: Verify Setup
-```bash
-python3 verify_setup.py
-```
+### Step 4 (Only for Ubuntu/Linux):
 
-Expected output:
-```
-======================================================================
-🚗 PARKING MANAGEMENT SYSTEM - SETUP VERIFICATION
-======================================================================
+############################################################
+# SYSTEM DEPENDENCIES (Ubuntu / Debian)
+# Run the following before installing Python requirements:
 
-Checking Python version... ✓ Python 3.10
+sudo apt update
+sudo apt install -y \
+    libxcb-xinerama0 \
+    libxcb-cursor0 \
+    libxkbcommon-x11-0 \
+    libxcb-icccm4 \
+    libxcb-image0 \
+    libxcb-keysyms1 \
+    libxcb-render-util0 \
+    libxcb-xkb1 \
+    libx11-xcb1 \
+    libgl1
 
-Checking required packages:
-  PyQt5        ✓
-  OpenCV       ✓
-  NumPy        ✓
-  YOLO         ✓
-  EasyOCR      ✓
-  Pillow       ✓
+############################################################
 
-Checking YOLO model file... ✓ Found (6.0 MB)
-
-Checking directories:
-  captured_images ✓
-  YOLO Models     ✓
-
-Checking camera access... ✓ OpenCV loaded
-
-======================================================================
-VERIFICATION SUMMARY
-======================================================================
-  Python Version            ✓ PASS
-  Required Packages         ✓ PASS
-  YOLO Model                ✓ PASS
-  Directories               ✓ PASS
-  Camera Access             ✓ PASS
-
-Result: 5/5 checks passed
-
-✓ ✓ ✓  All systems ready!  ✓ ✓ ✓
-
-You can now run:
-  python3 main_parking.py
-```
-
----
 
 ## 🚀 Running the Application
 
@@ -105,18 +79,19 @@ source venv/bin/activate
 python3 main_parking.py
 ```
 
-
+### Turn off GUI after running
+pkill -9 python3
 
 ## 📋 Requirements Summary
 
 ### Python Packages
 - **PyQt5** 5.15.9 - GUI Framework
-- **OpenCV** 4.8.0.74 - Image processing
+- **OpenCV-headless** 4.8.1.78 - Image processing
 - **YOLO (ultralytics)** 8.0.238 - License plate detection
 - **EasyOCR** 1.6.2 - Text recognition
-- **NumPy** 1.24.3 - Numerical computing
+- **NumPy** 1.24.4 - Numerical computing
 - **Pillow** 10.0.0 - Image handling
-- **PyTorch** 2.9.1 - Deep learning backend
+- **PyTorch** 2.1.2 - Deep learning backend
 - **openpyxl** 3.1.5 - Excel export
 
 ### System Requirements

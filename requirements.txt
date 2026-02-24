@@ -2,7 +2,7 @@
 PyQt5==5.15.9
 
 # Computer Vision & Image Processing
-opencv-python==4.8.1.78
+opencv-python-headless==4.8.1.78
 Pillow==10.1.0
 
 # Numerical Computing
